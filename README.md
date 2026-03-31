@@ -141,6 +141,8 @@ python3 prolog-executor.py -kb ~/myst/knowledge-base.pl   "scene_needed(X)."
 
 **1. Copy the skill into your Hermes skills directory:**
 
+The skill lives in a monorepo — this checks out only the `prolog-reasoning` folder, not the whole repo:
+
 ```bash
 mkdir -p ~/.hermes/skills
 git clone --filter=blob:none --sparse https://github.com/dr3d/hermes-skills.git /tmp/hermes-skills

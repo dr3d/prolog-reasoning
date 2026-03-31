@@ -125,6 +125,7 @@ python3 prolog-executor.py -kb ~/myst/knowledge-base.pl   "scene_needed(X)."
 | `scripts/generate-manifest.sh` | Regenerate KB manifest after writes |
 | `templates/` | Starter copies for new projects |
 | `FUTURE.md` | Design notes: forward chaining, CLP constraints, conflict detection |
+| `AGENT-INSTALL.md` | Agent-executable install instructions with explicit conditionals |
 
 ---
 
@@ -135,6 +136,8 @@ python3 prolog-executor.py -kb ~/myst/knowledge-base.pl   "scene_needed(X)."
 - No other external packages
 
 ## Installation
+
+> **Installing from inside an AI agent?** Use [`AGENT-INSTALL.md`](AGENT-INSTALL.md) — explicit step-by-step instructions written for autonomous execution, with conditional logic and no placeholders.
 
 **1. Clone the skill into your Hermes skills directory:**
 

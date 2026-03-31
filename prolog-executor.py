@@ -381,13 +381,91 @@ class PrologEngine:
 
             if f == 'retract' and n == 1:
                 pattern = self._deref(args[0], bindings)
-                for i, clause in enumerate(self.clauses):
-                    clause_term = self._clause_to_term(clause)
+                i = 0
+                while i < len(self.clauses):
+                    clause_term = self._clause_to_term(self.clauses[i])
                     u = self._unify(pattern, clause_term, bindings)
                     if u is not None:
                         self.clauses.pop(i)
                         yield u
-                        return
+                        # On backtrack, continue from same index (next clause shifted down)
+                    else:
+                        i += 1
+                return
+
+            if f == 'functor' and n == 3:
+                term_arg = self._deref(args[0], bindings)
+                if isinstance(term_arg, Variable):
+                    # Construct mode: functor(Term, Name, Arity)
+                    name_d = self._deref(args[1], bindings)
+                    arity_d = self._deref(args[2], bindings)
+                    if isinstance(name_d, Atom) and isinstance(arity_d, Number):
+                        a = int(arity_d.value)
+                        if a == 0:
+                            constructed = name_d
+                        else:
+                            fresh = []
+                            for _ in range(a):
+                                self.var_counter += 1
+                                fresh.append(Variable(f'_G{self.var_counter}'))
+                            constructed = Compound(name_d.name, fresh)
+                        u = self._unify(term_arg, constructed, bindings)
+                        if u is not None:
+                            yield u
+                elif isinstance(term_arg, Atom):
+                    u = self._unify(args[1], Atom(term_arg.name), bindings)
+                    if u is not None:
+                        u = self._unify(args[2], Number(0), u)
+                        if u is not None:
+                            yield u
+                elif isinstance(term_arg, Number):
+                    u = self._unify(args[1], term_arg, bindings)
+                    if u is not None:
+                        u = self._unify(args[2], Number(0), u)
+                        if u is not None:
+                            yield u
+                elif isinstance(term_arg, Compound):
+                    u = self._unify(args[1], Atom(term_arg.functor), bindings)
+                    if u is not None:
+                        u = self._unify(args[2], Number(len(term_arg.args)), u)
+                        if u is not None:
+                            yield u
+                return
+
+            if f == 'clause' and n == 2:
+                head_pat = self._deref(args[0], bindings)
+                for clause in self.clauses:
+                    rc = self._rename_variables(clause)
+                    u = self._unify(head_pat, rc.head, bindings)
+                    if u is None:
+                        continue
+                    if not rc.body:
+                        body_term = Atom('true')
+                    elif len(rc.body) == 1:
+                        body_term = rc.body[0]
+                    else:
+                        body_term = rc.body[-1]
+                        for bt in reversed(rc.body[:-1]):
+                            body_term = Compound(',', [bt, body_term])
+                    u2 = self._unify(args[1], body_term, u)
+                    if u2 is not None:
+                        yield u2
+                return
+
+            if f == 'assertz' and n == 1:
+                clause_term = self._deref(args[0], bindings)
+                clause = self._term_to_clause(clause_term)
+                if clause is not None:
+                    self.clauses.append(clause)
+                    yield bindings
+                return
+
+            if f == 'asserta' and n == 1:
+                clause_term = self._deref(args[0], bindings)
+                clause = self._term_to_clause(clause_term)
+                if clause is not None:
+                    self.clauses.insert(0, clause)
+                    yield bindings
                 return
 
             # --- User-defined clauses ---
@@ -418,7 +496,6 @@ class PrologEngine:
         if isinstance(first_d, Atom) and first_d.name == '!':
             yield from self._solve_goals(rest, bindings, depth)
             raise CutException()
-            return
         for sol in self._solve(first, bindings, depth):
             yield from self._solve_goals(rest, sol, depth)
 
@@ -655,7 +732,7 @@ def _find_infix(s: str, op: str) -> int:
                     if op == '=' and after in (':', '\\', '<', '>'):
                         i += 1
                         continue
-                    if op == '>' and before == '=':
+                    if op == '>' and after == '=':
                         i += 1
                         continue
                     if op == '<' and after == '=':
@@ -670,11 +747,13 @@ def _find_infix(s: str, op: str) -> int:
 
 def _collect_vars(term: Term) -> List[str]:
     """Collect all user-visible variable names from a term (no _G prefix)."""
-    seen = []
+    seen: List[str] = []
+    seen_set: set = set()
     def walk(t):
         if isinstance(t, Variable):
-            if not t.name.startswith('_G') and t.name != '_' and t.name not in seen:
+            if not t.name.startswith('_G') and t.name != '_' and t.name not in seen_set:
                 seen.append(t.name)
+                seen_set.add(t.name)
         elif isinstance(t, Compound):
             for a in t.args:
                 walk(a)
@@ -686,10 +765,10 @@ def _collect_vars(term: Term) -> List[str]:
 # ENTRYPOINT
 # ============================================================================
 
-def run_query(query: str) -> dict:
+def run_query(query: str, kb_path: str = None) -> dict:
     try:
         engine = PrologEngine()
-        engine.load_file(DATABASE)
+        engine.load_file(kb_path or DATABASE)
         bindings = engine.query(query)
         if bindings:
             return {"success": True, "bindings": bindings}
@@ -750,17 +829,29 @@ def run_manifest(kb_path: str = None) -> str:
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
+    args = sys.argv[1:]
+
+    # Extract -kb <path> from anywhere in args
+    kb_path = None
+    if '-kb' in args:
+        idx = args.index('-kb')
+        if idx + 1 < len(args):
+            kb_path = args[idx + 1]
+            args = args[:idx] + args[idx + 2:]
+        else:
+            print(json.dumps({"success": False, "error": "-kb requires a path argument"}))
+            sys.exit(1)
+
+    if not args:
         print(json.dumps({"success": False, "error": "no query provided"}))
         sys.exit(1)
 
-    if sys.argv[1] == "--manifest":
-        kb = sys.argv[2] if len(sys.argv) > 2 else None
-        print(run_manifest(kb))
+    if args[0] == "--manifest":
+        print(run_manifest(kb_path))
         sys.exit(0)
 
-    query = " ".join(sys.argv[1:])
-    result = run_query(query)
+    query = " ".join(args)
+    result = run_query(query, kb_path)
     print(json.dumps(result, default=str))
     sys.exit(0 if result.get("success") else 2)
 

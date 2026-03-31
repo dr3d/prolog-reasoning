@@ -191,7 +191,8 @@ python3 prolog-executor.py "ancestor(tom, X)."
 - `is/2` and arithmetic: `+  -  *  //  /  mod`
 - Comparisons: `>  <  >=  =<  =:=  =\=`
 - `findall/3`, negation as failure (`\+`), cut (`!`)
-- `assert/1`, `retract/1`
+- `assert/1`, `assertz/1`, `asserta/1`, `retract/1` (non-deterministic)
+- `functor/3`, `clause/2`
 - Lists, quoted atoms, anonymous variables
 - Depth limit: 500 (prevents runaway recursion)
 

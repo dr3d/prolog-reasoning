@@ -204,3 +204,31 @@ Empty bindings `[{}]` means the query succeeded with no variables (ground query 
 - Anonymous variable `_` matches anything, binds nothing
 - Don't assert both a fact and a rule that derives the same predicate — the fact is redundant and causes duplicate results
 - Depth limit is 500 — deep recursive rules will error; prefer iterative facts over deep recursion
+
+### Executor Implementation Pitfalls
+
+**Ground query bug**: When unification succeeds with no variables left to bind, it returns `{}` (empty dict), which is falsy in Python. Always check `if s is not None:` not `if s:`:
+
+```python
+# WRONG - ground queries fail!
+s = unify(query_args, fact_args)
+if s: results.append(s)           # {} evaluates to False!
+
+# CORRECT
+if s is not None: results.append(s)  # {} means success with no bindings
+```
+
+**Body predicate merging**: When combining substitution dicts from resolved body predicates, don't call `unify()` on them — just merge and check for conflicts:
+
+```python
+# WRONG - unify() doesn't handle dict-to-dict unification
+u = unify(sr, r)
+if u is not None: new_body.append(u)
+
+# CORRECT - merge dicts directly
+merged = {**r, **sr}
+conflict = any(k in r and r[k] != v for k,v in sr.items())
+if not conflict: new_body.append(merged)
+```
+
+These bugs cause rules to fail even when facts exist (e.g., `grandparent(medley, scott)` returns no results).

@@ -131,16 +131,32 @@ python3 prolog-executor.py -kb ~/myst/knowledge-base.pl   "scene_needed(X)."
 ## Requirements
 
 - Python 3.9+
-- No external packages
+- [Hermes](https://github.com/badayvedat/hermes)
+- No other external packages
 
-## Setup
+## Installation
+
+**1. Clone the skill into your Hermes skills directory:**
 
 ```bash
+git clone https://github.com/dr3d/hermes-skills.git ~/.hermes/skills
+```
+
+Or if you already have a skills directory, just copy the folder:
+
+```bash
+cp -r prolog-reasoning ~/.hermes/skills/
+```
+
+**2. Set up a knowledge base for your project:**
+
+```bash
+cd ~/your-project
 cp ~/.hermes/skills/prolog-reasoning/templates/prolog-executor.py .
 cp ~/.hermes/skills/prolog-reasoning/templates/knowledge-base.pl.example knowledge-base.pl
 ```
 
-Add the manifest to your Hermes prefill for ambient awareness:
+**3. Generate a manifest and wire it into Hermes prefill:**
 
 ```bash
 python3 prolog-executor.py --manifest > ~/.hermes/kb-manifest.md
@@ -149,6 +165,19 @@ python3 prolog-executor.py --manifest > ~/.hermes/kb-manifest.md
 ```yaml
 # ~/.hermes/config.yaml
 prefill_messages_file: ~/.hermes/kb-manifest.md
+```
+
+Regenerate the manifest after any KB write to keep it current:
+
+```bash
+~/.hermes/skills/prolog-reasoning/scripts/generate-manifest.sh
+```
+
+**4. Verify it works:**
+
+```bash
+python3 prolog-executor.py "ancestor(tom, X)."
+# {"success": true, "bindings": [{"X": "bob"}, {"X": "liz"}, {"X": "ann"}, {"X": "pat"}]}
 ```
 
 ---

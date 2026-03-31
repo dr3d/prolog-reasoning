@@ -1,4 +1,4 @@
-# hermes-skill-prolog-reasoning
+# Prolog Reasoning — Lossless Memory for LLM Agents
 
 A [Hermes](https://github.com/badayvedat/hermes) skill that gives an LLM agent a persistent, lossless fact store backed by a pure-Python Prolog interpreter. No external dependencies. No database. No embeddings. Just facts that stay true.
 

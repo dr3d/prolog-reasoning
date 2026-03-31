@@ -189,6 +189,11 @@ in various states of completion.
 > ```
 > No gate item has a missing asset — keycard is now placeholder, lantern is
 > placeholder. Both will load. The critical path is unblocked for the playtest.
+>
+> *(Once `--explain` is implemented, this would also return the proof: which
+> gate items were checked, which asset status each resolved to, and why none
+> matched `missing`. Right now you get the answer; eventually you'll get the
+> reasoning chain too.)*
 
 ---
 

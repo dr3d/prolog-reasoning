@@ -77,11 +77,43 @@ Design notes and open questions for extending the prolog-reasoning skill. Captur
 
 ---
 
+## 5. Proof Traces / Explainability
+
+**What the engine does now:** Returns `{"success": true, "bindings": [...]}` and discards the proof. The agent knows *what* is true but not *why*.
+
+**What explainability would add:** A `--explain` flag that returns the first proof as a flat list of steps alongside the normal result:
+
+```json
+{
+  "success": true,
+  "bindings": [{}],
+  "proof": [
+    "can_enter(vault) ← rule: gate(_, vault, Item), has(player, Item)",
+    "  gate(library, vault, lantern) — fact",
+    "  has(player, lantern) — fact"
+  ]
+}
+```
+
+No nested tree, no all-branches enumeration — just the derivation chain for the first solution. The agent can then relay this as reasoning, not just recall.
+
+**When this matters:**
+- Answering "why?" questions: "why can the player enter the vault?" → the proof shows the exact gate item and inventory fact that satisfied it
+- Debugging rules that succeed unexpectedly — the trace shows which clause fired
+- Trust: the agent isn't guessing, it's reporting a verifiable derivation
+
+**Implementation sketch:** Thread a proof accumulator (list of strings) through `_solve` and `_solve_goals`. On each clause match, append a line for the rule/fact. On each built-in, append the operation. Return the accumulated proof for the first solution when `--explain` is passed. The hard part is keeping the accumulator clean on backtrack — need to snapshot and restore rather than mutate.
+
+**Complexity:** Moderate. Touches the core recursion but is self-contained. Doesn't change normal query behavior.
+
+---
+
 ## Priority / Sequencing
 
 If these were to be implemented in order of value vs. effort:
 
 1. **Conflict detection** — low effort, high day-to-day value, prevents a real failure mode
-2. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
-3. **Rule safety / loop detection** — moderate effort, defensive value, nice for a public-facing tool
-4. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases
+2. **Proof traces** — moderate effort, turns the engine from a lookup tool into an explainable reasoner
+3. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
+4. **Rule safety / loop detection** — moderate effort, defensive value, nice for a public-facing tool
+5. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases

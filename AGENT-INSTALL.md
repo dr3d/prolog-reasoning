@@ -46,12 +46,14 @@ Check whether `prolog-executor.py` already exists here:
 ls prolog-executor.py 2>/dev/null && echo EXISTS || echo MISSING
 ```
 
-**If MISSING:** copy the templates:
+**If MISSING:** copy the executor and initialize a blank knowledge base:
 
 ```bash
 cp ~/.hermes/skills/prolog-reasoning/templates/prolog-executor.py ./prolog-executor.py
-cp ~/.hermes/skills/prolog-reasoning/templates/knowledge-base.pl.example ./knowledge-base.pl
+python3 prolog-executor.py --init blank
 ```
+
+If you want a domain-specific starter instead of blank, replace `blank` with one of: `personal`, `project`, `game`, `access-control`.
 
 **If EXISTS:** skip — do not overwrite a knowledge base that may already contain facts.
 
@@ -110,16 +112,16 @@ echo 'prefill_messages_file: ~/.hermes/kb-manifest.md' >> ~/.hermes/config.yaml
 ## Step 6 — Smoke test
 
 ```bash
-python3 prolog-executor.py "ancestor(tom, X)."
+python3 prolog-executor.py "1 is 1."
 ```
 
 Expected output:
 
 ```json
-{"success": true, "bindings": [{"X": "bob"}, {"X": "liz"}, {"X": "ann"}, {"X": "pat"}]}
+{"success": true, "bindings": [{}]}
 ```
 
-If `success` is `false`, check that `knowledge-base.pl` contains the starter family facts from the template. If the file is empty or missing, re-copy from the template.
+Empty bindings `[{}]` means the ground query succeeded. If `success` is `false`, check that `knowledge-base.pl` exists in the current directory.
 
 ---
 

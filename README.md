@@ -156,7 +156,16 @@ rm -rf /tmp/hermes-skills
 ```bash
 cd ~/your-project
 cp ~/.hermes/skills/prolog-reasoning/templates/prolog-executor.py .
-cp ~/.hermes/skills/prolog-reasoning/templates/knowledge-base.pl.example knowledge-base.pl
+python3 prolog-executor.py --init blank
+```
+
+Or start from a domain-specific template:
+
+```bash
+python3 prolog-executor.py --init personal      # biography, family, preferences
+python3 prolog-executor.py --init project       # tasks, owners, dependencies
+python3 prolog-executor.py --init game          # locations, inventory, quests, flags
+python3 prolog-executor.py --init access-control  # users, roles, permissions
 ```
 
 **3. Generate a manifest and wire it into Hermes prefill:**

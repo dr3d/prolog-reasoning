@@ -850,6 +850,25 @@ def main() -> None:
         print(run_manifest(kb_path))
         sys.exit(0)
 
+    if args[0] == "--init":
+        domain = args[1] if len(args) > 1 else "blank"
+        templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+        src = os.path.join(templates_dir, f"knowledge-base.{domain}.pl")
+        dest = kb_path or "knowledge-base.pl"
+        if not os.path.exists(src):
+            available = [f[len("knowledge-base."):-len(".pl")]
+                         for f in os.listdir(templates_dir)
+                         if f.startswith("knowledge-base.") and f.endswith(".pl")]
+            print(f"Unknown domain '{domain}'. Available: {', '.join(sorted(available))}")
+            sys.exit(1)
+        if os.path.exists(dest):
+            print(f"{dest} already exists — remove it first if you want to reinitialize.")
+            sys.exit(1)
+        import shutil
+        shutil.copy(src, dest)
+        print(f"Created {dest} from {domain} template.")
+        sys.exit(0)
+
     query = " ".join(args)
     result = run_query(query, kb_path)
     print(json.dumps(result, default=str))

@@ -22,11 +22,12 @@ Check whether `~/.hermes/skills/prolog-reasoning` already exists:
 ls ~/.hermes/skills/prolog-reasoning 2>/dev/null && echo EXISTS || echo MISSING
 ```
 
-**If MISSING:** clone to a temp location and copy just the skill folder:
+**If MISSING:** sparse-clone just the skill folder:
 
 ```bash
 mkdir -p ~/.hermes/skills
-git clone https://github.com/dr3d/hermes-skills.git /tmp/hermes-skills
+git clone --filter=blob:none --sparse https://github.com/dr3d/hermes-skills.git /tmp/hermes-skills
+cd /tmp/hermes-skills && git sparse-checkout set prolog-reasoning
 cp -r /tmp/hermes-skills/prolog-reasoning ~/.hermes/skills/
 rm -rf /tmp/hermes-skills
 ```

@@ -143,7 +143,8 @@ python3 prolog-executor.py -kb ~/myst/knowledge-base.pl   "scene_needed(X)."
 
 ```bash
 mkdir -p ~/.hermes/skills
-git clone https://github.com/dr3d/hermes-skills.git /tmp/hermes-skills
+git clone --filter=blob:none --sparse https://github.com/dr3d/hermes-skills.git /tmp/hermes-skills
+cd /tmp/hermes-skills && git sparse-checkout set prolog-reasoning
 cp -r /tmp/hermes-skills/prolog-reasoning ~/.hermes/skills/
 rm -rf /tmp/hermes-skills
 ```

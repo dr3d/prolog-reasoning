@@ -1,0 +1,14 @@
+% Sample Prolog knowledge base for family relationships
+% Add your own facts below this line
+
+% Family database example
+parent(tom, bob).
+parent(tom, liz).
+male(tom).
+female(liz).
+
+% Rules (keep these at the bottom)
+father(X, Y) :- parent(X, Y), male(X).
+mother(X, Y) :- parent(X, Y), female(X).
+grandparent(X, Y) :- parent(X, Z), parent(Z, Y).
+sibling(X, Y) :- parent(Z, X), parent(Z, Y), X @< Y.

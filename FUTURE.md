@@ -60,7 +60,7 @@ Design notes and open questions for extending the prolog-reasoning skill. Captur
 - Corrections: user says "actually I moved to Portland" — engine should retract the Austin fact, not append alongside it
 - Compaction: when sweeping a conversation, new facts might update old ones — automated conflict resolution prevents "truth pollution"
 
-**Implementation sketch:** Before `assert(F)`, query for all clauses matching `functor/arity`, compare, retract conflicts. Could be a wrapper script or a built-in. Low complexity.
+**Implementation sketch:** Before `assert(F)`, query for all clauses matching `functor/arity`, compare, retract conflicts. Could be a wrapper script or a built-in. Low complexity. Now even more tractable — `functor/3` and `clause/2` are implemented, so the detection logic can be written in pure Prolog rather than Python.
 
 ---
 

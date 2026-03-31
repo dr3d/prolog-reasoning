@@ -155,7 +155,7 @@ rm -rf /tmp/hermes-skills
 
 ```bash
 cd ~/your-project
-cp ~/.hermes/skills/prolog-reasoning/templates/prolog-executor.py .
+ln -s ~/.hermes/skills/prolog-reasoning/prolog-executor.py .
 python3 prolog-executor.py --init blank
 ```
 

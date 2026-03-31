@@ -20,7 +20,7 @@ KB="${1:-}"
 OUTPUT="${2:-$HOME/.hermes/kb-manifest.md}"
 
 if [ -n "$KB" ]; then
-    python3 "$EXECUTOR" --manifest "$KB" > "$OUTPUT"
+    python3 "$EXECUTOR" --manifest -kb "$KB" > "$OUTPUT"
 else
     python3 "$EXECUTOR" --manifest > "$OUTPUT"
 fi

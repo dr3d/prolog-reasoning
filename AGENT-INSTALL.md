@@ -46,10 +46,10 @@ Check whether `prolog-executor.py` already exists here:
 ls prolog-executor.py 2>/dev/null && echo EXISTS || echo MISSING
 ```
 
-**If MISSING:** copy the executor and initialize a blank knowledge base:
+**If MISSING:** symlink the executor (so it stays current with the skill) and initialize a blank knowledge base:
 
 ```bash
-cp ~/.hermes/skills/prolog-reasoning/templates/prolog-executor.py ./prolog-executor.py
+ln -s ~/.hermes/skills/prolog-reasoning/prolog-executor.py ./prolog-executor.py
 python3 prolog-executor.py --init blank
 ```
 

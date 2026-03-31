@@ -121,9 +121,10 @@ python3 prolog-executor.py -kb ~/myst/knowledge-base.pl   "scene_needed(X)."
 |------|---------|
 | `SKILL.md` | Agent instructions — when to extract, when to query, schema conventions |
 | `prolog-executor.py` | Pure-Python Prolog interpreter, zero dependencies |
-| `knowledge-base.pl` | The fact store — edit directly or via agent |
+| `knowledge-base.pl` | The fact store — created per project via `--init`, edit directly or via agent |
 | `scripts/generate-manifest.sh` | Regenerate KB manifest after writes |
-| `templates/` | Starter copies for new projects |
+| `templates/` | Domain starter KBs (`blank`, `personal`, `project`, `game`, `access-control`) — used by `--init` |
+| `EXAMPLE-GAME-DEV.md` | Realistic multi-session example: game dev using the skill across weeks |
 | `FUTURE.md` | Design notes: forward chaining, CLP constraints, conflict detection |
 | `AGENT-INSTALL.md` | Agent-executable install instructions with explicit conditionals |
 
@@ -188,9 +189,11 @@ Regenerate the manifest after any KB write to keep it current:
 **4. Verify it works:**
 
 ```bash
-python3 prolog-executor.py "ancestor(tom, X)."
-# {"success": true, "bindings": [{"X": "bob"}, {"X": "liz"}, {"X": "ann"}, {"X": "pat"}]}
+python3 prolog-executor.py "1 is 1."
+# {"success": true, "bindings": [{}]}
 ```
+
+Empty bindings `[{}]` means the ground query succeeded — the engine is running.
 
 ---
 

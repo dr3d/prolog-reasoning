@@ -139,16 +139,13 @@ python3 prolog-executor.py -kb ~/myst/knowledge-base.pl   "scene_needed(X)."
 
 > **Installing from inside an AI agent?** Use [`AGENT-INSTALL.md`](AGENT-INSTALL.md) — explicit step-by-step instructions written for autonomous execution, with conditional logic and no placeholders.
 
-**1. Clone the skill into your Hermes skills directory:**
+**1. Copy the skill into your Hermes skills directory:**
 
 ```bash
-git clone https://github.com/dr3d/hermes-skills.git ~/.hermes/skills
-```
-
-Or if you already have a skills directory, just copy the folder:
-
-```bash
-cp -r prolog-reasoning ~/.hermes/skills/
+mkdir -p ~/.hermes/skills
+git clone https://github.com/dr3d/hermes-skills.git /tmp/hermes-skills
+cp -r /tmp/hermes-skills/prolog-reasoning ~/.hermes/skills/
+rm -rf /tmp/hermes-skills
 ```
 
 **2. Set up a knowledge base for your project:**

@@ -388,7 +388,9 @@ class PrologEngine:
                     if u is not None:
                         self.clauses.pop(i)
                         yield u
-                        # On backtrack, continue from same index (next clause shifted down)
+                        # i is NOT incremented here: after the pop, what was at i+1
+                        # has shifted into position i, so the next iteration naturally
+                        # checks the right clause on backtrack.
                     else:
                         i += 1
                 return
@@ -697,7 +699,11 @@ def _split_top(s: str, sep: str) -> List[str]:
 
 
 def _find_infix(s: str, op: str) -> int:
-    """Return index of op at top level (depth 0), or -1. Scans right-to-left for left-assoc."""
+    """Return index of op at top level (depth 0), or -1.
+    Scans left-to-right but records the *rightmost* match, which yields
+    left-associativity: splitting 'a+b+c' at the rightmost '+' gives
+    left='a+b', right='c' → +(+(a,b), c).
+    """
     depth = 0
     in_quote = False
     last = -1

@@ -103,7 +103,7 @@ python3 prolog-executor.py --check
 
 ---
 
-## 5. Proof Traces / Explainability
+## 6. Proof Traces / Explainability
 
 **What the engine does now:** Returns `{"success": true, "bindings": [...]}` and discards the proof. The agent knows *what* is true but not *why*.
 

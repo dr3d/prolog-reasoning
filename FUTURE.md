@@ -64,7 +64,33 @@ Design notes and open questions for extending the prolog-reasoning skill. Captur
 
 ---
 
-## 4. Rule Safety / Loop Detection
+## 4. KB Integrity Rules / `--check` Pass
+
+**The idea:** User-defined integrity constraints written in Prolog itself, run as a validation pass before or after writes.
+
+```prolog
+% Add to knowledge-base.pl:
+integrity_violation(self_parent) :- parent(X, X).
+integrity_violation(conflicting_location) :- lives_in(X, A), lives_in(X, B), A \= B.
+```
+
+```bash
+python3 prolog-executor.py --check
+# {"violations": [{"rule": "conflicting_location", "details": "..."}]}
+```
+
+**Why this is Prolog-native:** Constraints are just rules. No new engine features needed — `--check` just queries all `integrity_violation/1` clauses and reports matches. The KB self-documents its own invariants.
+
+**When this matters:**
+- Catch contradictions the agent introduced across sessions
+- Enforce domain rules (a person can't have two birth years, an asset can't be both complete and missing)
+- Run as a post-write sanity check in the manifest generation script
+
+**Complexity:** Very low. ~10 lines in the executor. The hard part is writing good constraint rules, which is the user/agent's job.
+
+---
+
+## 5. Rule Safety / Loop Detection
 
 **The risk:** An LLM writing rules into the KB might accidentally create a mutually recursive cycle that only terminates because of the depth limit (500). The error is cryptic ("Depth limit exceeded") and doesn't tell you which rule caused it.
 
@@ -113,7 +139,8 @@ No nested tree, no all-branches enumeration — just the derivation chain for th
 If these were to be implemented in order of value vs. effort:
 
 1. **Conflict detection** — low effort, high day-to-day value, prevents a real failure mode
-2. **Proof traces** — moderate effort, turns the engine from a lookup tool into an explainable reasoner
-3. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
-4. **Rule safety / loop detection** — moderate effort, defensive value, nice for a public-facing tool
-5. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases
+2. **KB integrity rules / --check** — very low effort, pure Prolog, catches contradictions across sessions
+3. **Proof traces** — moderate effort, turns the engine from a lookup tool into an explainable reasoner
+4. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
+5. **Rule safety / loop detection** — moderate effort, defensive value, nice for a public-facing tool
+6. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases

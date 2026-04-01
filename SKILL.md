@@ -1,6 +1,20 @@
 ---
 name: prolog-reasoning
-description: Structured fact journal and inference engine — stores hard facts as Prolog, queries them before reasoning
+description: "Store definite facts when stated; query before answering. Invoke this skill whenever:
+
+  1. The user states something definitively true — a relationship, event, role, location, or preference. Write immediately, not at session end.
+  2. The user asks a factual question about a known person, entity, or policy. Query the KB first; never rely on recall.
+  3. A conversation is being compacted. Extract all hard facts before prose summarization — precision is lost after compaction.
+
+  4. A Knowledge Base manifest appears in context — this skill manages it.
+
+  Definite means no hedging: my sister got promoted yes; I think bob might be retired no.
+
+  Two invocation modes:
+  - No query or compact: sweep the conversation and write new facts to the KB
+  - With a query: run it against the KB and return results
+
+  The KB supports inference — relationships, permissions, ancestry — derived from stored facts without redundant assertions. Correct a fact by editing the KB directly; never assert a contradicting clause."
 ---
 
 # prolog-reasoning

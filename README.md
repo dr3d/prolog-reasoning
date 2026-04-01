@@ -1,25 +1,6 @@
 # Prolog Reasoning — Lossless Memory for LLM Agents
 
-A [Hermes](https://github.com/NousResearch/hermes-agent) skill that gives an LLM agent a persistent, lossless fact store backed by a pure-Python Prolog interpreter. No external dependencies. No database. No embeddings. Just facts that stay true.
-
-> **Experimental.** Prolog as LLM memory is a new idea and we're actively exploring it. The engine works, the patterns are emerging, and the schema conventions are best guesses that will evolve. If you build on this, expect to iterate — and contributions are welcome.
-
----
-
-## Try It Without Hermes
-
-The executor is a standalone Python script. No agent setup required to explore:
-
-```bash
-git clone https://github.com/dr3d/prolog-reasoning.git
-cd prolog-reasoning
-python3 prolog-executor.py --init blank
-python3 prolog-executor.py "1 is 1."
-# {"success": true, "bindings": [{}]}
-python3 prolog-executor.py --manifest
-```
-
-Edit `knowledge-base.pl` directly, add some facts, query them. The Hermes integration is the layer on top — the engine underneath is just Python and logic.
+A [Hermes](https://github.com/NousResearch/hermes-agent) skill and standalone engine for storing hard facts that LLM agents can query and reason from. No server. No schema. No embeddings. No dependencies beyond Python.
 
 ---
 
@@ -58,15 +39,45 @@ ancestor(X, Y)    :- parent(X, Z), ancestor(Z, Y).
 allowed(User, Action) :- role(User, Role), permission(Role, Action).
 ```
 
-```bash
-python3 prolog-executor.py "ancestor(ann, X)."
-# {"success": true, "bindings": [{"X": "scott"}, {"X": "blake"}, ...]}
+You asserted a handful of `parent` and `permission` facts. The engine does the rest. No re-summarization, no retrieval, no guessing.
 
-python3 prolog-executor.py "allowed(alice, X)."
-# {"success": true, "bindings": [{"X": "read"}, {"X": "write"}, {"X": "delete"}]}
+---
+
+## Try It
+
+The executor is a standalone Python script. Clone the repo and query the sample KB immediately — no agent setup, no config:
+
+```bash
+git clone https://github.com/dr3d/prolog-reasoning.git
+cd prolog-reasoning
 ```
 
-You asserted a handful of `parent` and `permission` facts. The engine does the rest. No re-summarization, no retrieval, no guessing.
+```bash
+# Inference: ancestors derived from parent facts
+python3 prolog-executor.py "ancestor(tom, X)."
+# {"success": true, "bindings": [{"X": "bob"}, {"X": "liz"}, {"X": "ann"}, {"X": "pat"}]}
+
+# Access control: what can alice do?
+python3 prolog-executor.py "allowed(alice, X)."
+# {"success": true, "bindings": [{"X": "read"}, {"X": "write"}, {"X": "delete"}]}
+
+# Classification: what can fly?
+python3 prolog-executor.py "can_fly(X)."
+# {"success": true, "bindings": [{"X": "eagle"}, {"X": "bat"}]}
+
+# Arithmetic
+python3 prolog-executor.py "factorial(6, F)."
+# {"success": true, "bindings": [{"F": "720"}]}
+```
+
+```bash
+# See what's in the KB
+python3 prolog-executor.py --manifest
+```
+
+None of `ancestor`, `allowed`, or `can_fly` are stored as facts — they're derived by rules from a handful of `parent`, `role`, and `bird` assertions. That's the point.
+
+To start a KB for your own project: `python3 prolog-executor.py --init blank` (or `personal`, `project`, `game`, `access-control`). Edit `knowledge-base.pl` directly or let the agent write it. The Hermes integration is the layer on top — the engine underneath is just Python and logic.
 
 ---
 
@@ -279,6 +290,8 @@ SQL requires a schema, a running server, and queries that enumerate everything e
 For a zero-dependency, no-server tool that travels with a Python script and reasons about relationships the way an agent naturally thinks about them, Prolog is the right fit.
 
 ## Where This Is Going
+
+> **Experimental.** Prolog as LLM memory is a new idea and we're actively exploring it. The engine works, the patterns are emerging, and the schema conventions are best guesses that will evolve. If you build on this, expect to iterate — and contributions are welcome.
 
 This project is exploring a hypothesis: that hard facts and soft context belong in different storage media, and that agents which treat them the same will always drift. Prolog is one answer to the hard-facts side of that — compact, lossless, inferable.
 

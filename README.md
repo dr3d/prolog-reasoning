@@ -250,6 +250,15 @@ For a zero-dependency, no-server tool that travels with a Python script and reas
 
 ---
 
+## Acknowledgements
+
+Early configuration and skill integration work was done in collaboration with
+**Qwen3.5-27B** running locally on a **PowerSpec G483** — a capable local model
+that understood the developing skill and contributed meaningfully to forward
+motion. Local inference matters.
+
+---
+
 ## License
 
 MIT

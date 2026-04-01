@@ -198,12 +198,15 @@ python3 prolog-executor.py --init access-control  # users, roles, permissions
 **3. Generate a manifest and wire it into Hermes prefill:**
 
 ```bash
-python3 prolog-executor.py --manifest > ~/.hermes/kb-manifest.md
+python3 prolog-executor.py --manifest
 ```
+
+This writes `~/.hermes/kb-manifest.json` as a prefill messages array.
 
 ```yaml
 # ~/.hermes/config.yaml
-prefill_messages_file: ~/.hermes/kb-manifest.md
+agent:
+  prefill_messages_file: ~/.hermes/kb-manifest.json
 ```
 
 Regenerate the manifest after any KB write to keep it current:

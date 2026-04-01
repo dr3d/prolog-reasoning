@@ -784,7 +784,7 @@ def run_query(query: str, kb_path: str = None) -> dict:
 
 
 GLOBAL_KB = os.path.expanduser("~/.hermes/knowledge-base.pl")
-GLOBAL_MANIFEST = os.path.expanduser("~/.hermes/kb-manifest.md")
+GLOBAL_MANIFEST = os.path.expanduser("~/.hermes/kb-manifest.json")
 
 
 def _introspect_kb(path: str) -> Optional[Dict]:
@@ -831,7 +831,7 @@ def _kb_block(label: str, data: Dict) -> List[str]:
 
 
 def run_manifest(kb_path: str = None) -> str:
-    """Introspect global KB, write manifest, return it. Skill: line always present."""
+    """Introspect global KB, write kb-manifest.json as a prefill messages array, return text."""
     blocks = []
 
     global_data = _introspect_kb(GLOBAL_KB)
@@ -842,9 +842,14 @@ def run_manifest(kb_path: str = None) -> str:
     blocks.append("Query: python3 prolog-executor.py \"<prolog_query>\"")
 
     manifest = "\n".join(blocks)
+    prefill = [
+        {"role": "user", "content": manifest},
+        {"role": "assistant", "content": "Understood. I have the knowledge base manifest in context."},
+    ]
     os.makedirs(os.path.dirname(GLOBAL_MANIFEST), exist_ok=True)
     with open(GLOBAL_MANIFEST, "w") as f:
-        f.write(manifest + "\n")
+        json.dump(prefill, f, indent=2)
+        f.write("\n")
     return manifest
 
 

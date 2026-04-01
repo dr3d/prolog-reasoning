@@ -1,6 +1,6 @@
 # Prolog Reasoning — Lossless Memory for LLM Agents
 
-A [Hermes](https://github.com/badayvedat/hermes) skill that gives an LLM agent a persistent, lossless fact store backed by a pure-Python Prolog interpreter. No external dependencies. No database. No embeddings. Just facts that stay true.
+A [Hermes](https://github.com/NousResearch/hermes-agent) skill that gives an LLM agent a persistent, lossless fact store backed by a pure-Python Prolog interpreter. No external dependencies. No database. No embeddings. Just facts that stay true.
 
 ---
 
@@ -133,7 +133,7 @@ python3 prolog-executor.py -kb ~/myst/knowledge-base.pl   "scene_needed(X)."
 ## Requirements
 
 - Python 3.9+
-- [Hermes](https://github.com/badayvedat/hermes)
+- [Hermes](https://github.com/NousResearch/hermes-agent)
 - No other external packages
 
 ## Installation

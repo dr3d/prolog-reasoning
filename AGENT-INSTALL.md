@@ -59,19 +59,19 @@ If you want a domain-specific starter instead of blank, replace `blank` with one
 ## Step 4 — Generate the manifest
 
 ```bash
-python3 prolog-executor.py --manifest > ~/.hermes/kb-manifest.md
+python3 prolog-executor.py --manifest
 ```
 
-Verify the output looks like:
+This writes `~/.hermes/kb-manifest.json` as a prefill messages array and prints the manifest text. Verify the output looks like:
 
 ```
-## Knowledge Base
+## Global Knowledge Base
 Facts: N  Rules: N
 Predicates: ...
 Known entities: ...
 ```
 
-If the command fails, check that `knowledge-base.pl` is present in the current directory. The executor looks for it there by default.
+If the command fails, check that `~/.hermes/knowledge-base.pl` exists.
 
 ---
 
@@ -87,7 +87,8 @@ ls ~/.hermes/config.yaml 2>/dev/null && echo EXISTS || echo MISSING
 
 ```bash
 cat > ~/.hermes/config.yaml << 'EOF'
-prefill_messages_file: ~/.hermes/kb-manifest.md
+agent:
+  prefill_messages_file: ~/.hermes/kb-manifest.json
 EOF
 ```
 
@@ -98,10 +99,13 @@ grep prefill_messages_file ~/.hermes/config.yaml && echo SET || echo MISSING
 ```
 
 - If SET: leave it alone and tell the user the existing value — they may want to review it.
-- If MISSING: append the line:
+- If MISSING: append under the `agent:` key:
 
 ```bash
-echo 'prefill_messages_file: ~/.hermes/kb-manifest.md' >> ~/.hermes/config.yaml
+cat >> ~/.hermes/config.yaml << 'EOF'
+agent:
+  prefill_messages_file: ~/.hermes/kb-manifest.json
+EOF
 ```
 
 ---
@@ -128,4 +132,4 @@ Tell the user:
 - Where the skill was installed (`~/.hermes/skills/prolog-reasoning/`)
 - Where the KB lives (current project directory)
 - That the manifest is wired into `~/.hermes/config.yaml`
-- That they should regenerate the manifest after any KB write: `python3 prolog-executor.py --manifest > ~/.hermes/kb-manifest.md`
+- That they should regenerate the manifest after any KB write: `python3 prolog-executor.py --manifest`

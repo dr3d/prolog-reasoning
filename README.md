@@ -2,6 +2,25 @@
 
 A [Hermes](https://github.com/NousResearch/hermes-agent) skill that gives an LLM agent a persistent, lossless fact store backed by a pure-Python Prolog interpreter. No external dependencies. No database. No embeddings. Just facts that stay true.
 
+> **Experimental.** Prolog as LLM memory is a new idea and we're actively exploring it. The engine works, the patterns are emerging, and the schema conventions are best guesses that will evolve. If you build on this, expect to iterate — and contributions are welcome.
+
+---
+
+## Try It Without Hermes
+
+The executor is a standalone Python script. No agent setup required to explore:
+
+```bash
+git clone https://github.com/dr3d/prolog-reasoning.git
+cd prolog-reasoning
+python3 prolog-executor.py --init blank
+python3 prolog-executor.py "1 is 1."
+# {"success": true, "bindings": [{}]}
+python3 prolog-executor.py --manifest
+```
+
+Edit `knowledge-base.pl` directly, add some facts, query them. The Hermes integration is the layer on top — the engine underneath is just Python and logic.
+
 ---
 
 ## The Problem with LLM Memory
@@ -89,9 +108,10 @@ python3 prolog-executor.py --manifest
 # Facts: 47  Rules: 8
 # Predicates: born/2  event/2  lives_in/2  occupation/2  parent/2  role/2  sibling/2
 # Known entities: alice, ann, blake, dana, scott
+# Skill: prolog-reasoning
 ```
 
-No per-turn KB lookups needed. The agent wakes up knowing what it knows.
+No per-turn KB lookups needed. The agent wakes up knowing what it knows. The `Skill:` line causes the skill to load automatically when the manifest is present in prefill — no explicit invocation required.
 
 ---
 
@@ -192,6 +212,16 @@ Empty bindings `[{}]` means the ground query succeeded — the engine is running
 
 ---
 
+## How the Skill Activates
+
+**KB already exists (returning session):** The manifest in prefill contains `Skill: prolog-reasoning` — the agent loads the skill automatically. No invocation needed. This is the intended steady state.
+
+**No KB yet (first time):** The skill appears in the Hermes skill index with a one-line description. The agent discovers it when a conversation involves facts worth keeping, or you can invoke `/prolog-reasoning` directly to kick off setup. Either way, the agent runs `--init` to create the KB, then the manifest path takes over from there.
+
+Once the manifest is wired into `config.yaml` it stays wired. The only ongoing maintenance is regenerating the manifest after KB writes — which `scripts/generate-manifest.sh` handles.
+
+---
+
 ## Interpreter Capabilities
 
 - Facts, rules, unification, backtracking
@@ -247,6 +277,12 @@ parent(mary_ann, scott).    % RIGHT — underscore
 SQL requires a schema, a running server, and queries that enumerate everything explicitly. Prolog gives you schema-free storage and inference — `grandparent`, `ancestor`, `allowed` are never stored, they're derived. For a personal knowledge base where the shape of the data isn't known in advance, that flexibility matters.
 
 For a zero-dependency, no-server tool that travels with a Python script and reasons about relationships the way an agent naturally thinks about them, Prolog is the right fit.
+
+## Where This Is Going
+
+This project is exploring a hypothesis: that hard facts and soft context belong in different storage media, and that agents which treat them the same will always drift. Prolog is one answer to the hard-facts side of that — compact, lossless, inferable.
+
+Open questions we're working through: the right schema conventions for common domains, how compaction interacts with KB growth over long sessions, whether forward-chaining rules belong in the KB or stay implicit in SKILL.md, and how the two-tier (global/project) model holds up at scale. `FUTURE.md` tracks the design threads. If you're using this and hitting edges, that's useful signal.
 
 ---
 

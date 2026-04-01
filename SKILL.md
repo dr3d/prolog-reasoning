@@ -232,3 +232,63 @@ if not conflict: new_body.append(merged)
 ```
 
 These bugs cause rules to fail even when facts exist (e.g., `grandparent(medley, scott)` returns no results).
+
+**No built-in list predicates**: The executor does NOT have `member/2`, `append/3`, or other common list operations. You must define them yourself in the KB:
+
+```prolog
+% Define member/2 if you need it
+member(X, [X|_]).
+member(X, [_|T]) :- member(X, T).
+```
+
+Without this, rules using `member/2` will fail with "No solutions found" even when the logic is correct.
+
+**Depth limit handles cycles**: The executor has a built-in depth limit of 50 recursive calls. For transitive closure on graphs with cycles (bidirectional navigation, family trees), you can rely on this instead of implementing visited-list tracking:
+
+```prolog
+% Simple version - relies on depth=50 limit to prevent infinite loops
+can_reach(A, B) :- connects(A, B).
+can_reach(A, B) :- connects(A, Mid), can_reach(Mid, B).
+```
+
+This works for most practical cases and is simpler than visited-list approaches (which require `member/2`).
+
+### Advanced Patterns
+
+**Transitive closure with cycles**: For graph traversal where cycles exist (bidirectional navigation, family trees), rely on the executor's depth limit rather than implementing visited-list tracking. The executor has a built-in depth limit of 50 recursive calls:
+
+```prolog
+% Simple version - relies on depth=50 limit to prevent infinite loops
+can_reach(A, B) :- connects(A, B).
+can_reach(A, B) :- connects(A, Mid), can_reach(Mid, B).
+```
+
+This works for most practical cases and is simpler than visited-list approaches (which require `member/2` that must be defined manually).
+
+**Mixed-arity predicates**: When you need optional arguments, handle both forms explicitly:
+
+```prolog
+% Accepts scene/2 or scene/3
+main_island_scene(Scene) :- 
+    (scene(Scene, _) ; scene(Scene, _, _)), 
+    \+ is_age(Scene),
+    !.  % cut prevents duplicates if scene appears in both forms
+```
+
+Note: Mixed arity can be a code smell — consider using separate `property/3` predicates instead of optional arguments.
+
+**KB as living documentation**: Use meta-predicates to track project state, not just facts:
+
+```prolog
+% Track what's left to build
+todo(calibrate_hotspots, 'adjust x,y,w,h coordinates').
+todo(implement_puzzle, 'tower rotation mechanic').
+
+% Test checklist
+test(start_button_works).
+test(all_scenes_load).
+
+% Query todos: findall(T, todo(T, _), Tasks)
+```
+
+This turns the KB into an active project management tool that survives session loss.

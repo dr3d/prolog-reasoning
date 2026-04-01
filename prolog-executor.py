@@ -830,6 +830,7 @@ def run_manifest(kb_path: str = None) -> str:
         entity_list = ", ".join(sorted(entities))
         lines.append(f"Known entities: {entity_list}")
 
+    lines.append("Skill: prolog-reasoning")
     lines.append("Query: python3 prolog-executor.py \"<prolog_query>\"")
     return "\n".join(lines)
 

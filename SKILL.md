@@ -243,10 +243,10 @@ member(X, [_|T]) :- member(X, T).
 
 Without this, rules using `member/2` will fail with "No solutions found" even when the logic is correct.
 
-**Depth limit handles cycles**: The executor has a built-in depth limit of 50 recursive calls. For transitive closure on graphs with cycles (bidirectional navigation, family trees), you can rely on this instead of implementing visited-list tracking:
+**Depth limit handles cycles**: The executor has a built-in depth limit of 500 recursive calls. For transitive closure on graphs with cycles (bidirectional navigation, family trees), you can rely on this instead of implementing visited-list tracking:
 
 ```prolog
-% Simple version - relies on depth=50 limit to prevent infinite loops
+% Simple version - relies on depth=500 limit to prevent infinite loops
 can_reach(A, B) :- connects(A, B).
 can_reach(A, B) :- connects(A, Mid), can_reach(Mid, B).
 ```
@@ -255,10 +255,10 @@ This works for most practical cases and is simpler than visited-list approaches 
 
 ### Advanced Patterns
 
-**Transitive closure with cycles**: For graph traversal where cycles exist (bidirectional navigation, family trees), rely on the executor's depth limit rather than implementing visited-list tracking. The executor has a built-in depth limit of 50 recursive calls:
+**Transitive closure with cycles**: For graph traversal where cycles exist (bidirectional navigation, family trees), rely on the executor's depth limit rather than implementing visited-list tracking. The executor has a built-in depth limit of 500 recursive calls:
 
 ```prolog
-% Simple version - relies on depth=50 limit to prevent infinite loops
+% Simple version - relies on depth=500 limit to prevent infinite loops
 can_reach(A, B) :- connects(A, B).
 can_reach(A, B) :- connects(A, Mid), can_reach(Mid, B).
 ```

@@ -783,19 +783,21 @@ def run_query(query: str, kb_path: str = None) -> dict:
         return {"success": False, "error": str(exc)}
 
 
-def run_manifest(kb_path: str = None) -> str:
-    """Introspect the KB and return a compact human-readable manifest."""
-    path = kb_path or DATABASE
+GLOBAL_KB = os.path.expanduser("~/.hermes/knowledge-base.pl")
+GLOBAL_MANIFEST = os.path.expanduser("~/.hermes/kb-manifest.md")
+
+
+def _introspect_kb(path: str) -> Optional[Dict]:
+    """Load a KB file and return introspection data, or None if not found."""
     engine = PrologEngine()
     try:
         engine.load_file(path)
     except FileNotFoundError:
-        return "Knowledge base: empty (no file found)"
+        return None
 
     facts = [c for c in engine.clauses if not c.body]
     rules = [c for c in engine.clauses if c.body]
 
-    # Predicate inventory
     pred_counts: Dict[str, int] = {}
     for c in engine.clauses:
         if isinstance(c.head, Compound):
@@ -806,7 +808,6 @@ def run_manifest(kb_path: str = None) -> str:
             continue
         pred_counts[key] = pred_counts.get(key, 0) + 1
 
-    # Known entities — atoms that appear as arguments in facts
     entities: set = set()
     def collect_atoms(term: Term):
         if isinstance(term, Atom) and term.name not in ('[]', '!', 'true', 'fail'):
@@ -817,22 +818,34 @@ def run_manifest(kb_path: str = None) -> str:
     for c in facts:
         collect_atoms(c.head)
 
-    lines = [
-        "## Knowledge Base",
-        f"Facts: {len(facts)}  Rules: {len(rules)}",
-    ]
+    return {"facts": facts, "rules": rules, "pred_counts": pred_counts, "entities": entities}
 
-    if pred_counts:
-        pred_list = "  ".join(sorted(pred_counts.keys()))
-        lines.append(f"Predicates: {pred_list}")
 
-    if entities:
-        entity_list = ", ".join(sorted(entities))
-        lines.append(f"Known entities: {entity_list}")
+def _kb_block(label: str, data: Dict) -> List[str]:
+    lines = [f"## {label}", f"Facts: {len(data['facts'])}  Rules: {len(data['rules'])}"]
+    if data["pred_counts"]:
+        lines.append(f"Predicates: {'  '.join(sorted(data['pred_counts'].keys()))}")
+    if data["entities"]:
+        lines.append(f"Known entities: {', '.join(sorted(data['entities']))}")
+    return lines
 
-    lines.append("Skill: prolog-reasoning")
-    lines.append("Query: python3 prolog-executor.py \"<prolog_query>\"")
-    return "\n".join(lines)
+
+def run_manifest(kb_path: str = None) -> str:
+    """Introspect global KB, write manifest, return it. Skill: line always present."""
+    blocks = []
+
+    global_data = _introspect_kb(GLOBAL_KB)
+    if global_data:
+        blocks.extend(_kb_block("Global Knowledge Base", global_data))
+
+    blocks.append("Skill: prolog-reasoning")
+    blocks.append("Query: python3 prolog-executor.py \"<prolog_query>\"")
+
+    manifest = "\n".join(blocks)
+    os.makedirs(os.path.dirname(GLOBAL_MANIFEST), exist_ok=True)
+    with open(GLOBAL_MANIFEST, "w") as f:
+        f.write(manifest + "\n")
+    return manifest
 
 
 def main() -> None:

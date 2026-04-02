@@ -326,10 +326,13 @@ Open questions we're working through: the right schema conventions for common do
 
 ## Acknowledgements
 
-Early configuration and skill integration work was done in collaboration with
-**Qwen3.5-27B** running locally on a **PowerSpec G483** — a capable local model
-that understood the developing skill and contributed meaningfully to forward
-motion. Local inference matters.
+This project has been developed in collaboration with several local models running on a **PowerSpec G483**. Local inference matters.
+
+**Qwen3.5-27B** — early configuration and skill integration work, SKILL.md structural rewrite (decision tree, wrong/right examples, behavioral opening), and ongoing reasoning assistance across sessions.
+
+**Nemotron-3-nano-4B** — review pass that caught the date/hyphen arithmetic gotcha by reproducing it in its own example KB, and contributed to diagnosing manifest injection issues with the prefill pipeline. Remarkable work for a 4B model.
+
+**Claude Sonnet 4.6** — engine development, test suite, bug fixes, demos.
 
 ---
 

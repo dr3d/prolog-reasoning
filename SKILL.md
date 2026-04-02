@@ -185,10 +185,12 @@ property(scott, eye_color, brown).
 property(arthur, moved_to, australia).
 ```
 
-**Events:**
+**Events — dates MUST be quoted atoms:**
 ```prolog
-event(deploy_completed, '2026-03-31').
-event(started_job, '2024-01-15').
+event(deploy_completed, '2026-03-31').  % RIGHT — quoted atom
+event(started_job,      '2024-01-15').  % RIGHT
+
+event(deploy_completed, 2026-03-31).    % WRONG — parses as 2026 minus 3 minus 31 = 1992
 ```
 
 **Rules — derive, don't store redundantly:**
@@ -220,7 +222,7 @@ If the user corrects a fact, find and update `knowledge-base.pl` directly — do
 
 ## Pitfalls
 
-- **Hyphenated atoms**: `mary-ann` parses as subtraction — use `'mary-ann'` or `mary_ann`
+- **Hyphens are subtraction**: anything with a `-` that isn't quoted is arithmetic. This catches names (`mary-ann`) AND dates (`2026-05-12` = 2009). Always quote: `'mary-ann'`, `'2026-05-12'`
 - **Variable names**: must start uppercase (`X`, `Parent`, `Role`)
 - **No built-in list predicates**: the executor has no `member/2`, `append/3` — define them in the KB if needed
 - **Depth limit is 500**: deep recursive rules error; prefer iterative facts over deep recursion

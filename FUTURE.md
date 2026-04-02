@@ -134,31 +134,7 @@ No nested tree, no all-branches enumeration — just the derivation chain for th
 
 ---
 
-## 7. `retractall/1`
-
-**What the engine does now:** `retract/1` removes one matching clause per solution (non-deterministic). There is no way to remove all clauses matching a pattern in a single call.
-
-**What `retractall/1` would add:** Remove every clause matching a head pattern in one step, always succeed (even if nothing matched). Standard Prolog built-in. Required for clean entity updates — replacing all `lives_in(scott, _)` before asserting the new location, without writing a recursive helper.
-
-**Implementation sketch:** Iterate `self.clauses`, collect matching indices, pop them all. ~8 lines. Trivial.
-
-**Complexity:** Very low.
-
----
-
-## 8. Deduplication on Assert
-
-**What the engine does now:** `assert(F)` appends unconditionally. Asserting the same fact twice creates two identical clauses — both will match every query, causing duplicate results and bloating the KB.
-
-**What deduplication would add:** A `assertz_unique/1` built-in (or a flag on `assert`) that checks for an identical existing clause before appending. If it's already there, succeed silently without adding.
-
-**Implementation sketch:** Before appending, check `any(clause matches F)`. ~5 lines in the `assertz` branch.
-
-**Complexity:** Very low. Could also be expressed in pure Prolog using `clause/2` and a cut, but a built-in is cleaner for agent use.
-
----
-
-## 9. Entity Aliases
+## 7. Entity Aliases
 
 **What the engine does now:** `john` and `john_smith` and `John` are three distinct atoms. If the agent writes facts under two spellings, queries for one won't find the other.
 
@@ -219,12 +195,10 @@ If these were to be implemented in order of value vs. effort:
 
 1. **Conflict detection** — low effort, high day-to-day value, prevents a real failure mode
 2. **KB integrity rules / --check** — very low effort, pure Prolog, catches contradictions across sessions
-3. **`retractall/1`** — trivial to implement, needed for clean entity updates
-4. **Deduplication on assert** — trivial, prevents silent KB bloat
-5. **Entity aliases** — zero engine work, pure KB convention, document in SKILL.md
-6. **Domain suitability documentation** — zero engine work, prevents tool misuse
-7. **Proof traces** — moderate effort, turns the engine from a lookup tool into an explainable reasoner
-8. **Query timeout / search budget** — low-moderate effort, needed before any public release
-9. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
-10. **Rule safety / loop detection** — moderate effort, defensive value
-11. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases
+3. **Entity aliases** — zero engine work, pure KB convention, document in SKILL.md
+4. **Domain suitability documentation** — zero engine work, prevents tool misuse
+5. **Proof traces** — moderate effort, turns the engine from a lookup tool into an explainable reasoner
+6. **Query timeout / search budget** — low-moderate effort, needed before any public release
+7. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
+8. **Rule safety / loop detection** — moderate effort, defensive value
+9. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases

@@ -891,8 +891,9 @@ def main() -> None:
             sys.exit(1)
 
     if not args:
-        print(json.dumps({"success": False, "error": "no query provided"}))
-        sys.exit(1)
+        args = ["--manifest"]
+        if kb_path is None:
+            kb_path = "knowledge-base.pl"
 
     if args[0] == "--manifest":
         print(run_manifest(kb_path))

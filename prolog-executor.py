@@ -831,20 +831,43 @@ def _kb_block(label: str, data: Dict) -> List[str]:
 
 
 def run_manifest(kb_path: str = None) -> str:
-    """Introspect global KB, write kb-manifest.json as a prefill messages array, return text."""
+    """Introspect KB(s), write kb-manifest.json as a prefill messages array, return text."""
     blocks = []
 
-    global_data = _introspect_kb(GLOBAL_KB)
-    if global_data:
-        blocks.extend(_kb_block("Global Knowledge Base", global_data))
+    # If a specific KB path was given, use it; otherwise fall back to global KB.
+    target_path = kb_path if kb_path else GLOBAL_KB
+    target_data = _introspect_kb(target_path)
+    if target_data:
+        label = "Global Knowledge Base" if target_path == GLOBAL_KB else "Knowledge Base"
+        blocks.extend(_kb_block(label, target_data))
+
+    # If a project KB was given, also include the global KB as a second block.
+    if kb_path and kb_path != GLOBAL_KB:
+        global_data = _introspect_kb(GLOBAL_KB)
+        if global_data:
+            blocks.extend(_kb_block("Global Knowledge Base", global_data))
 
     blocks.append("Skill: prolog-reasoning")
-    blocks.append("Query: python3 prolog-executor.py \"<prolog_query>\"")
+    blocks.append(f"Query: python3 prolog-executor.py \"<prolog_query>\" -kb {target_path}")
 
     manifest = "\n".join(blocks)
+
+    # Build the entity list for the behavioral commitment line.
+    all_entities: list = []
+    for line in blocks:
+        if line.startswith("Known entities:"):
+            all_entities.extend(e.strip() for e in line[len("Known entities:"):].split(","))
+    entity_hint = (
+        f" Known entities: {', '.join(sorted(set(all_entities)))}." if all_entities else ""
+    )
+
     prefill = [
         {"role": "user", "content": manifest},
-        {"role": "assistant", "content": "Understood. I have the knowledge base manifest in context."},
+        {"role": "assistant", "content": (
+            f"Understood.{entity_hint} "
+            "I will run prolog-executor.py before answering any factual question "
+            "about entities in the knowledge base — not from memory."
+        )},
     ]
     os.makedirs(os.path.dirname(GLOBAL_MANIFEST), exist_ok=True)
     with open(GLOBAL_MANIFEST, "w") as f:

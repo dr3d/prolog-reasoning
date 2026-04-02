@@ -120,9 +120,10 @@ python3 prolog-executor.py --manifest
 # Predicates: born/2  event/2  lives_in/2  occupation/2  parent/2  role/2  sibling/2
 # Known entities: alice, ann, blake, dana, scott
 # Skill: prolog-reasoning
+# Query: python3 prolog-executor.py "<prolog_query>" -kb ~/.hermes/knowledge-base.pl
 ```
 
-No per-turn KB lookups needed. The agent wakes up knowing what it knows. The `Skill:` line causes the skill to load automatically when the manifest is present in prefill — no explicit invocation required.
+No per-turn KB lookups needed. The agent wakes up knowing which entities and predicates exist. Combined with the behavioral commitment in the assistant prefill turn, this is what drives the agent to query before answering — not from memory.
 
 ---
 
@@ -228,7 +229,11 @@ Empty bindings `[{}]` means the ground query succeeded — the engine is running
 
 ## How the Skill Activates
 
-**KB already exists (returning session):** The manifest in prefill contains `Skill: prolog-reasoning` — the agent loads the skill automatically. No invocation needed. This is the intended steady state.
+**KB already exists (returning session):** The manifest in prefill gives the agent ambient awareness of what entities and predicates exist. The assistant prefill turn commits the model behaviorally:
+
+> *"Understood. Known entities: alice, ann, blake... I will run prolog-executor.py before answering any factual question about entities in the knowledge base — not from memory."*
+
+This is what drives query-before-answer behavior. The manifest also contains `Skill: prolog-reasoning` and the ready-to-run query command, so the agent has everything it needs from turn 1.
 
 **No KB yet (first time):** The skill appears in the Hermes skill index with a one-line description. The agent discovers it when a conversation involves facts worth keeping, or you can invoke `/prolog-reasoning` directly to kick off setup. Either way, the agent runs `--init` to create the KB, then the manifest path takes over from there.
 

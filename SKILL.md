@@ -1,49 +1,82 @@
 ---
 name: prolog-reasoning
-description: "For hard facts and ground truths requiring flawless memory. Use this skill whenever:
-
-  1. The user states something definitively true — a relationship, event, role, location, or preference. Write immediately, not at session end.
-  2. The user asks a factual question about a known person, entity, or policy. Query the KB first; never rely on recall.
-  3. A conversation is being compacted. Extract all hard facts before prose summarization — precision is lost after compaction.
-
-  4. A Knowledge Base manifest appears in context — this skill manages it.
-
-  Definite means no hedging: my sister got promoted yes; I think bob might be retired no.
-
-  Two invocation modes:
-  - No query or compact: sweep the conversation and write new facts to the KB
-  - With a query: run it against the KB and return results
-
-  The KB supports inference — relationships, permissions, ancestry — derived from stored facts without redundant assertions. Correct a fact by editing the KB directly; never assert a contradicting clause."
+description: "lossless symbolic memory — store hard facts as Prolog ground terms, query with inference; use instead of prose memory for anything definitively true"
+tags: []
+related_skills: []
 ---
 
-# prolog-reasoning
+# CRITICAL: QUERY BEFORE ANSWERING
 
-A persistent, queryable fact store for Hermes. When conversations contain definite facts about the world, they go here — not into prose summaries. Ground Prolog facts are lossless, deduplicatable, and inferable. This is the structured memory layer.
+**If the user asks a factual question about ANY entity in the KB manifest → Query Prolog FIRST.**
 
-## Invocation Modes
+```
+WRONG: "Your mom is Ann and dad is Ian."  ← answered from injected context
+RIGHT: query parent(X, scott) → answer from results
+```
 
-This skill has two modes depending on how it is called:
-
-**Compaction mode** — invoked with no query, or with the word `compact`:
-> "prolog-reasoning" / "prolog-reasoning compact"
-
-The agent's job is to sweep the current conversation, extract hard facts, and write them to `knowledge-base.pl`. Do this before any prose summarization — facts must be extracted while the full context is still available. This is the primary way the KB gets populated.
-
-**Query mode** — invoked with a Prolog query:
-> "prolog-reasoning: ancestor(tom, X)."
-
-Run the query against the KB and return results. Use this before answering any factual question about a known entity.
-
-When in doubt about which mode: if the conversation is long or being wound down, default to compaction mode first, then answer any pending question.
-
-**Preferred pattern — extract in real time, don't wait:** When the user states a hard fact mid-conversation, write it to the KB immediately. Don't accumulate and batch at compaction time — that risks losing precision. Compaction mode is a catch-all sweep, not the primary intake path.
+**Do NOT answer from injected memory if the entity appears in the KB manifest.** The manifest at the top of this conversation tells you what's in the KB. If it mentions the person/entity → query it. Period. The injection can be stale; the KB is always current.
 
 ---
 
-## Core Idea
+## Quick Decision Tree (Follow Every Time)
 
-LLM memory compaction is lossy. This skill is the lossless alternative for hard facts. When a conversation establishes that X is true — not hypothetically, not tentatively — that fact belongs in `knowledge-base.pl` as a Prolog term. The engine is deliberately simple: store ground facts, query with shallow inference. No WAM required.
+1. **User asks a factual question?**
+   - YES → Go to step 2
+   - NO → Skip to **When to Write Facts** below
+
+2. **Is the entity in the KB manifest?** (check the "Known entities:" line)
+   - YES → **MUST QUERY PROLOG** before answering
+   - NO → Can answer from memory/context
+
+3. **Run the query:**
+   ```bash
+   python3 prolog-executor.py "<query>" -kb ~/.hermes/knowledge-base.pl
+   ```
+
+4. **Answer ONLY from query results** (or say "not in KB" if no match)
+
+---
+
+## Examples: Wrong vs Right
+
+### WRONG - Using Memory
+```
+User: "who is my mum and dad?"
+Agent: "Your mom is Ann and dad is Ian."  # From injected memory!
+```
+
+### RIGHT - Querying First
+```
+User: "who is my mum and dad?"
+Agent: [queries parent(X, scott)]
+Result: {"success": true, "bindings": [{"X": "ann"}, {"X": "ian"}]}
+Agent: "Based on the knowledge base: your parents are Ann and Ian."
+```
+
+### WRONG - Partial Query
+```
+User: "what do we know about arthur?"
+Agent: [queries boxer(arthur)]  # Only checks one predicate!
+Agent: "Arthur was a boxer."    # Missed that he moved to Australia!
+```
+
+### RIGHT - Comprehensive Query
+```
+User: "what do we know about arthur?"
+Agent: [queries findall(P-V, property(arthur, P, V), Facts), then boxer(arthur)]
+Result: Arthur is a boxer who moved to australia
+Agent: "Arthur was a boxer who moved to Australia."
+```
+
+---
+
+## Core Principle
+
+**LLM memory is lossy. Prolog facts are ground truth.**
+
+When the user states something definitively true, it goes into `knowledge-base.pl`. When you need to answer about those facts, query the KB — don't rely on injected context. Use this skill instead of prose memory tools for anything that is factually precise and should be queryable.
+
+---
 
 ## When to Write Facts
 
@@ -61,31 +94,69 @@ LLM memory compaction is lossy. This skill is the lossless alternative for hard 
 - Opinions that may change ("I prefer tabs over spaces right now")
 - Things already in the KB (check before asserting)
 
-**Trigger points** — always check whether to extract when:
+**Trigger points** — always consider extracting when:
 1. The user states a biographical or relational fact about themselves or known people
-2. A conversation is being summarized or compacted
+2. A conversation is being summarized or compacted — extract facts first, then prose
 3. The user corrects a prior belief ("actually, ann is my aunt not my cousin")
 4. A task completes and its outcome is a fact ("the migration ran successfully on 2026-03-31")
 
-## When to Query
+**Preferred pattern — extract in real time, don't wait.** Compaction mode is a catch-all sweep, not the primary intake path.
 
-Before answering any factual question about a person, place, relationship, or policy that might be in the KB — query first. Do not rely on LLM recall for things that should be in the KB. Examples:
+---
+
+## Invocation Modes
+
+### Query Mode (User asks a factual question)
+```bash
+# Find Scott's parents
+python3 prolog-executor.py "parent(P, scott)." -kb ~/.hermes/knowledge-base.pl
+
+# What do we know about Arthur? (comprehensive)
+python3 prolog-executor.py "findall(P-V, property(arthur, P, V), Facts)." -kb ~/.hermes/knowledge-base.pl
+
+# Is X related to Y?
+python3 prolog-executor.py "ancestor(tom, scott)." -kb ~/.hermes/knowledge-base.pl
+
+# What can alice do?
+python3 prolog-executor.py "allowed(alice, X)." -kb ~/.hermes/knowledge-base.pl
+```
+
+### Compaction Mode (Extract facts from conversation)
+When the user states hard facts or a session is ending:
+1. Sweep for definite statements (no hedging like "I think" or "maybe")
+2. Check if already in KB: `python3 prolog-executor.py "parent(ann, scott)." -kb ~/.hermes/knowledge-base.pl`
+3. Append new facts to `knowledge-base.pl` under appropriate section
+4. Add date comment: `% added 2026-04-01`
+5. Only after KB is updated — hand off to normal prose compaction
+
+> **Executor path**: examples above assume `prolog-executor.py` is symlinked into your project dir. If not, use the full path: `~/.hermes/skills/prolog-reasoning/prolog-executor.py`
+
+---
+
+## Query Patterns
 
 ```bash
-# Is X related to Y?
-python3 prolog-executor.py "ancestor(tom, X)."
+# Find all parents of scott
+python3 prolog-executor.py "parent(P, scott)." -kb ~/.hermes/knowledge-base.pl
 
-# What role does a user have?
-python3 prolog-executor.py "role(alice, R)."
+# Find all children of ann
+python3 prolog-executor.py "parent(ann, C)." -kb ~/.hermes/knowledge-base.pl
 
-# What do we know about scott?
-python3 prolog-executor.py "findall(P-V, property(scott, P, V), Facts)."
+# All properties of scott
+python3 prolog-executor.py "findall(P-V, property(scott, P, V), Facts)." -kb ~/.hermes/knowledge-base.pl
+
+# Is medley a grandparent of scott?
+python3 prolog-executor.py "grandparent(medley, scott)." -kb ~/.hermes/knowledge-base.pl
+
+# Find all ancestors of scott
+python3 prolog-executor.py "ancestor(A, scott)." -kb ~/.hermes/knowledge-base.pl
 ```
+
+---
 
 ## Schema Conventions
 
-Use lowercase atoms for all values. Use underscores for multi-word atoms, or quoted atoms for proper nouns with punctuation.
-
+**Use lowercase atoms with underscores:**
 ```prolog
 % RIGHT
 lives_in(scott, austin).
@@ -93,115 +164,42 @@ parent(ann, scott).
 occupation(scott, 'software-engineer').
 
 % WRONG — hyphens parse as minus in Prolog
-parent(mary-ann, scott).   % mary-ann is subtraction, not an atom
+parent(mary-ann, scott).   % This is subtraction!
+parent('mary-ann', scott). % RIGHT — quoted atom
+parent(mary_ann, scott).   % RIGHT — underscore
 ```
 
-### Predicate naming by domain
-
-**People / identity**
-```prolog
-person(scott).
-male(scott).  female(dana).
-born(scott, 1975).          % year or date atom
-lives_in(scott, austin).
-occupation(scott, developer).
-```
-
-**Relationships**
+**Relationships:**
 ```prolog
 parent(ann, scott).         % parent(Parent, Child)
 spouse(scott, susan).
-ex_spouse(scott, susan).
 sibling(scott, blake).
-partner(scott, hope).
+male(scott).  female(dana).
+born(scott, 1975).
+lives_in(scott, austin).
 ```
 
-**General properties** — use `property/3` for one-offs rather than inventing a new predicate:
+**General properties (use property/3 for one-offs):**
 ```prolog
 property(scott, eye_color, brown).
-property(scott, prefers, dark_mode).
+property(arthur, moved_to, australia).
 ```
 
-**Events**
+**Events:**
 ```prolog
-event(migration_completed, '2026-03-31').
+event(deploy_completed, '2026-03-31').
 event(started_job, '2024-01-15').
 ```
 
-**Memberships / roles**
-```prolog
-role(alice, admin).
-member(scott, team_platform).
-```
-
-**Rules** — derive from facts, don't assert redundantly:
+**Rules — derive, don't store redundantly:**
 ```prolog
 grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
-sibling(X, Y) :- parent(P, X), parent(P, Y), X \= Y.
+ancestor(X, Y)    :- parent(X, Y).
+ancestor(X, Y)    :- parent(X, Z), ancestor(Z, Y).
+allowed(User, Action) :- role(User, Role), permission(Role, Action).
 ```
 
-## Memory Compaction Protocol
-
-**Order matters: extract facts before prose summarization.** Once the conversation is summarized, precision is gone.
-
-When invoked in compaction mode:
-
-1. Sweep the full conversation for hard facts (see criteria above)
-2. For each candidate, verify it is not already in the KB: `python3 prolog-executor.py "parent(ann, scott)."`
-3. Append new facts to `knowledge-base.pl` under the appropriate section
-4. Add a date comment for recently established facts: `% added 2026-03-31`
-5. Only after KB is updated — hand off to normal prose compaction for the rest
-
-## Correcting Facts
-
-If the user corrects a fact, find and update `knowledge-base.pl` directly — do not append a contradicting fact. Two conflicting ground clauses both succeed in Prolog.
-
-## Ambient Awareness — Manifest in Prefill
-
-The agent should not have to decide "should I check the KB?" — it should always know what the KB contains. Achieve this by injecting a manifest into every session via Hermes `prefill_messages_file`.
-
-Generate the manifest:
-```bash
-python3 prolog-executor.py --manifest
-# ## Knowledge Base
-# Facts: 47  Rules: 8
-# Predicates: parent/2  role/2  lives_in/2  ...
-# Known entities: scott, ann, blake, alice, ...
-```
-
-To keep it current, regenerate after every KB write:
-```bash
-~/.hermes/skills/prolog-reasoning/scripts/generate-manifest.sh [kb_path] [output_path]
-# default output: ~/.hermes/kb-manifest.json
-```
-
-Then in `~/.hermes/config.yaml`:
-```yaml
-agent:
-  prefill_messages_file: ~/.hermes/kb-manifest.json
-```
-
-With this in place the agent wakes up every session already knowing what entities and predicates exist in the KB. Fact recall becomes ambient — no decision required.
-
-## Two-Tier KB Architecture
-
-For projects with both personal and project-specific facts, maintain separate KBs:
-
-**Global KB** (`~/.hermes/knowledge-base.pl`):
-- Persistent personal facts across all sessions
-- Family tree, career history, preferences
-- Never deleted or reset between sessions
-
-**Session/Project KB** (`~/project-name/knowledge-base.pl`):
-- Project-specific facts (assets, scenes, progress)
-- Can be promoted to global later if relevant
-- Isolated per project to avoid context bleed
-
-Query either with `-kb <path>`:
-```bash
-python3 prolog-executor.py "lives_in(scott, X)." -kb ~/.hermes/knowledge-base.pl
-python3 prolog-executor.py "scene_needed(X)." -kb ~/myst/knowledge-base.pl
-```
+---
 
 ## Output Format
 
@@ -210,110 +208,66 @@ python3 prolog-executor.py "scene_needed(X)." -kb ~/myst/knowledge-base.pl
 { "success": false, "error": "No solutions found" }
 ```
 
-Empty bindings `[{}]` means the query succeeded with no variables (ground query confirmed true).
+Empty bindings `[{}]` means the query succeeded with no variables — ground query confirmed true.
+
+---
+
+## Correcting Facts
+
+If the user corrects a fact, find and update `knowledge-base.pl` directly — do not append a contradicting fact. Two conflicting ground clauses both succeed in Prolog, giving wrong duplicate results.
+
+---
 
 ## Pitfalls
 
-- Hyphenated atoms (`mary-ann`) parse as subtraction — use `'mary-ann'` or `mary_ann`
-- Variable names must start with uppercase (`X`, `Parent`, `Role`)
-- Anonymous variable `_` matches anything, binds nothing
-- Don't assert both a fact and a rule that derives the same predicate — the fact is redundant and causes duplicate results
-- Depth limit is 500 — deep recursive rules will error; prefer iterative facts over deep recursion
+- **Hyphenated atoms**: `mary-ann` parses as subtraction — use `'mary-ann'` or `mary_ann`
+- **Variable names**: must start uppercase (`X`, `Parent`, `Role`)
+- **No built-in list predicates**: the executor has no `member/2`, `append/3` — define them in the KB if needed
+- **Depth limit is 500**: deep recursive rules error; prefer iterative facts over deep recursion
+- **Don't assert both a fact and a rule that derives the same predicate** — causes duplicate results
 
-## Common Mistakes
+---
 
-**Using generic memory instead of KB**: Don't use the `memory` tool for hard facts that should be Prolog facts. The `memory` tool (target='user' or 'memory') is for user preferences, environment quirks, and procedural notes - NOT for factual data like:
-- Family relationships ✓ → Use `parent/2`, `sibling/2`, etc. in KB
-- Game collections ✓ → Use `game/1`, `owns/2` in KB  
-- Locations of files ✓ → Use `location/2` in KB
-- Events that occurred ✓ → Use `event/2` in KB
+## Two-Tier KB Architecture
 
-The `memory` tool is lossy and not queryable. The Prolog KB is the authoritative source for hard facts.
+**Global KB** (`~/.hermes/knowledge-base.pl`) — persistent across all sessions:
+- Family, relationships, biographical data
+- Career history, preferences
 
-### Executor Implementation Pitfalls
+**Project KB** (`~/project-name/knowledge-base.pl`) — scoped to a project:
+- Task progress, decisions, domain-specific entities
+- Can be promoted to global when facts become permanent
 
-**Ground query bug**: When unification succeeds with no variables left to bind, it returns `{}` (empty dict), which is falsy in Python. Always check `if s is not None:` not `if s:`:
-
-```python
-# WRONG - ground queries fail!
-s = unify(query_args, fact_args)
-if s: results.append(s)           # {} evaluates to False!
-
-# CORRECT
-if s is not None: results.append(s)  # {} means success with no bindings
+```bash
+python3 prolog-executor.py "lives_in(scott, X)." -kb ~/.hermes/knowledge-base.pl
+python3 prolog-executor.py "scene_needed(X)."    -kb ~/myst/knowledge-base.pl
 ```
 
-**Body predicate merging**: When combining substitution dicts from resolved body predicates, don't call `unify()` on them — just merge and check for conflicts:
+---
 
-```python
-# WRONG - unify() doesn't handle dict-to-dict unification
-u = unify(sr, r)
-if u is not None: new_body.append(u)
+## Ambient Awareness — Manifest in Prefill
 
-# CORRECT - merge dicts directly
-merged = {**r, **sr}
-conflict = any(k in r and r[k] != v for k,v in sr.items())
-if not conflict: new_body.append(merged)
+The KB manifest is injected into every session via `prefill_messages_file`. The agent wakes up already knowing what entities and predicates exist — no per-turn decision needed.
+
+Generate and wire it up:
+```bash
+python3 prolog-executor.py --manifest -kb ~/.hermes/knowledge-base.pl
+# writes ~/.hermes/kb-manifest.json
 ```
 
-These bugs cause rules to fail even when facts exist (e.g., `grandparent(medley, scott)` returns no results).
-
-**No built-in list predicates**: The executor does NOT have `member/2`, `append/3`, or other common list operations. You must define them yourself in the KB:
-
-```prolog
-% Define member/2 if you need it
-member(X, [X|_]).
-member(X, [_|T]) :- member(X, T).
+```yaml
+# ~/.hermes/config.yaml  (note: under agent:, not at root level)
+agent:
+  prefill_messages_file: /home/scott/.hermes/kb-manifest.json
 ```
 
-Without this, rules using `member/2` will fail with "No solutions found" even when the logic is correct.
-
-**Depth limit handles cycles**: The executor has a built-in depth limit of 500 recursive calls. For transitive closure on graphs with cycles (bidirectional navigation, family trees), you can rely on this instead of implementing visited-list tracking:
-
-```prolog
-% Simple version - relies on depth=500 limit to prevent infinite loops
-can_reach(A, B) :- connects(A, B).
-can_reach(A, B) :- connects(A, Mid), can_reach(Mid, B).
+Regenerate after every KB write:
+```bash
+~/.hermes/skills/prolog-reasoning/scripts/generate-manifest.sh
 ```
 
-This works for most practical cases and is simpler than visited-list approaches (which require `member/2`).
+---
 
-### Advanced Patterns
+## Final Reminder
 
-**Transitive closure with cycles**: For graph traversal where cycles exist (bidirectional navigation, family trees), rely on the executor's depth limit rather than implementing visited-list tracking. The executor has a built-in depth limit of 500 recursive calls:
-
-```prolog
-% Simple version - relies on depth=500 limit to prevent infinite loops
-can_reach(A, B) :- connects(A, B).
-can_reach(A, B) :- connects(A, Mid), can_reach(Mid, B).
-```
-
-This works for most practical cases and is simpler than visited-list approaches (which require `member/2` that must be defined manually).
-
-**Mixed-arity predicates**: When you need optional arguments, handle both forms explicitly:
-
-```prolog
-% Accepts scene/2 or scene/3
-main_island_scene(Scene) :- 
-    (scene(Scene, _) ; scene(Scene, _, _)), 
-    \+ is_age(Scene),
-    !.  % cut prevents duplicates if scene appears in both forms
-```
-
-Note: Mixed arity can be a code smell — consider using separate `property/3` predicates instead of optional arguments.
-
-**KB as living documentation**: Use meta-predicates to track project state, not just facts:
-
-```prolog
-% Track what's left to build
-todo(calibrate_hotspots, 'adjust x,y,w,h coordinates').
-todo(implement_puzzle, 'tower rotation mechanic').
-
-% Test checklist
-test(start_button_works).
-test(all_scenes_load).
-
-% Query todos: findall(T, todo(T, _), Tasks)
-```
-
-This turns the KB into an active project management tool that survives session loss.
+**The KB is the source of truth for immutable facts.** Injected memory can be stale or incomplete. When in doubt → query Prolog.

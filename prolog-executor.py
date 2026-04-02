@@ -1010,9 +1010,17 @@ def _validate_term(term: Term, location: str) -> list:
                     return f"{_show(t.args[0])}{t.functor}{_show(t.args[1])}"
                 return '?'
             raw = f"{_show(l)}{term.functor}{_show(r)}"
-            warnings.append(
-                f"{location}: '{raw}' parsed as arithmetic — use underscores or single quotes"
-            )
+            # Hyphen between two name-like tokens: offer both fix options
+            if term.functor == '-' and isinstance(l, Atom) and (isinstance(r, Atom) or isinstance(r, Number)):
+                snake = f"{_show(l)}_{_show(r)}"
+                warnings.append(
+                    f"{location}: '{raw}' parsed as arithmetic — fix: {snake} (underscore) or '{raw}' (quoted atom)"
+                )
+            else:
+                # Arithmetic expression (e.g. 10+5, 3*4) — quoting is the only option
+                warnings.append(
+                    f"{location}: '{raw}' parsed as arithmetic — fix: '{raw}' (quoted atom)"
+                )
     else:
         for arg in term.args:
             warnings.extend(_validate_term(arg, location))

@@ -141,8 +141,8 @@ Personal facts and project facts are kept separate to prevent context bleed:
 - Can be promoted to global when facts become permanent
 
 ```bash
-python3 prolog-executor.py -kb ~/.hermes/knowledge-base.pl "lives_in(scott, X)."
-python3 prolog-executor.py -kb ~/myst/knowledge-base.pl   "scene_needed(X)."
+python3 prolog-executor.py "lives_in(scott, X)." -kb ~/.hermes/knowledge-base.pl
+python3 prolog-executor.py "scene_needed(X)."    -kb ~/myst/knowledge-base.pl
 ```
 
 ---

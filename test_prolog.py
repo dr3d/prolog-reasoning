@@ -6,8 +6,12 @@ Run:  python test_prolog.py
 """
 
 import importlib.util
+import io
+import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 # ---------------------------------------------------------------------------
 # Load the module — hyphenated filename prevents standard import
@@ -707,6 +711,121 @@ class TestValidate(unittest.TestCase):
         # Arithmetic in rule body is intentional — validate only checks heads
         w = self._warnings("double(X, Y) :- Y is X * 2.")
         self.assertEqual(w, [])
+
+    # --- multiple issues ---
+
+    def test_multiple_bad_facts_all_flagged(self):
+        kb = "event(a, 2026-01-01). event(b, 2025-06-15). born(scott, 'Salem, MA')."
+        w = self._warnings(kb)
+        self.assertEqual(len(w), 2)
+
+    def test_mixed_kb_only_bad_ones_flagged(self):
+        kb = "age(scott, 42). event(launch, 2026-03-31). name(scott, 'Scott E')."
+        w = self._warnings(kb)
+        self.assertEqual(len(w), 1)
+        self.assertIn("2026-03-31", w[0])
+
+    # --- operator variants ---
+
+    def test_plus_operator_in_data_position_flagged(self):
+        w = self._warnings("score(alice, 10+5).")
+        self.assertEqual(len(w), 1)
+        self.assertIn("10+5", w[0])
+
+    def test_multiply_operator_in_data_position_flagged(self):
+        w = self._warnings("ratio(x, 3*4).")
+        self.assertEqual(len(w), 1)
+
+    def test_divide_operator_in_data_position_flagged(self):
+        w = self._warnings("rate(x, 1/2).")
+        self.assertEqual(len(w), 1)
+
+    # --- arg position reporting ---
+
+    def test_warning_reports_correct_functor_arity(self):
+        w = self._warnings("event(deploy, 2026-03-31).")
+        self.assertIn("event/2", w[0])
+
+    def test_warning_reports_correct_arg_number(self):
+        # Bad term is the second arg
+        w = self._warnings("event(deploy, 2026-03-31).")
+        self.assertIn("arg 2", w[0])
+
+    def test_bad_first_arg_reports_arg_1(self):
+        w = self._warnings("tagged(2026-01-01, deploy).")
+        self.assertIn("arg 1", w[0])
+
+    # --- edge cases ---
+
+    def test_zero_arity_atom_head_clean(self):
+        # Atom head has no args — nothing to validate
+        w = self._warnings("running.")
+        self.assertEqual(w, [])
+
+    def test_hyphen_with_number_flagged(self):
+        # gpu-1 parses as -(gpu, 1) — arithmetic in data position
+        w = self._warnings("hardware(gpu-1).")
+        self.assertEqual(len(w), 1)
+        self.assertIn("gpu-1", w[0])
+
+    def test_quoted_hyphenated_name_clean(self):
+        w = self._warnings("hardware('gpu-1').")
+        self.assertEqual(w, [])
+
+    def test_pre_1900_year_not_mistaken_for_date(self):
+        # 1066-04-14 — year <= 1900, falls to general arithmetic warning not "date"
+        w = self._warnings("event(battle, 1066-04-14).")
+        self.assertEqual(len(w), 1)
+        self.assertNotIn("unquoted date", w[0])
+
+    def test_rule_head_with_variable_clean(self):
+        # Rule heads with variables are fine
+        w = self._warnings("at_risk(X) :- old(X).")
+        self.assertEqual(w, [])
+
+    def test_number_literal_in_fact_clean(self):
+        w = self._warnings("age(scott, 42). score(alice, 99).")
+        self.assertEqual(w, [])
+
+    # --- run_validate CLI behaviour ---
+
+    def _run_validate(self, kb_text: str):
+        """Write kb_text to a temp file, run run_validate, return (stdout, exit_code)."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.pl', delete=False) as f:
+            f.write(kb_text)
+            path = f.name
+        try:
+            buf = io.StringIO()
+            with patch('sys.stdout', buf):
+                try:
+                    _mod.run_validate(path)
+                    code = 0
+                except SystemExit as e:
+                    code = e.code
+            return buf.getvalue(), code
+        finally:
+            import os; os.unlink(path)
+
+    def test_run_validate_exits_0_on_clean_kb(self):
+        _, code = self._run_validate("born(scott, 'Salem, MA'). age(scott, 42).")
+        self.assertEqual(code, 0)
+
+    def test_run_validate_exits_1_on_bad_kb(self):
+        _, code = self._run_validate("event(deploy, 2026-03-31).")
+        self.assertEqual(code, 1)
+
+    def test_run_validate_output_contains_warning(self):
+        out, _ = self._run_validate("event(deploy, 2026-03-31).")
+        self.assertIn("WARNING", out)
+        self.assertIn("2026-03-31", out)
+
+    def test_run_validate_output_contains_ok(self):
+        out, _ = self._run_validate("born(scott, 'Salem, MA').")
+        self.assertIn("OK", out)
+
+    def test_run_validate_reports_clause_count(self):
+        out, _ = self._run_validate("age(scott, 42). born(scott, 'Salem, MA').")
+        self.assertIn("2 clauses", out)
 
 
 if __name__ == "__main__":

@@ -873,8 +873,38 @@ def _kb_block(label: str, data: Dict) -> List[str]:
     return lines
 
 
+def _manifest_is_current(kb_paths: list) -> bool:
+    """Return True if kb-manifest.json is newer than every KB file in kb_paths."""
+    if not os.path.exists(GLOBAL_MANIFEST):
+        return False
+    manifest_mtime = os.path.getmtime(GLOBAL_MANIFEST)
+    return all(
+        not os.path.exists(p) or os.path.getmtime(p) <= manifest_mtime
+        for p in kb_paths
+    )
+
+
 def run_manifest(kb_path: str = None) -> str:
-    """Introspect KB(s), write kb-manifest.json as a prefill messages array, return text."""
+    """Introspect KB(s), write kb-manifest.json as a prefill messages array, return text.
+
+    Skips the write if kb-manifest.json is already newer than all KB source files
+    (mtime check). Returns existing manifest content in that case.
+    """
+    # Determine which KB files feed this manifest.
+    target_path = kb_path if kb_path else GLOBAL_KB
+    kb_sources = [target_path]
+    if kb_path and kb_path != GLOBAL_KB and os.path.exists(GLOBAL_KB):
+        kb_sources.append(GLOBAL_KB)
+
+    if _manifest_is_current(kb_sources):
+        # Manifest is up to date — read and return existing content without re-writing.
+        try:
+            with open(GLOBAL_MANIFEST) as f:
+                prefill = json.load(f)
+            return prefill[0]["content"]
+        except Exception:
+            pass  # Fall through to regenerate if the file is unreadable.
+
     blocks = []
 
     # If a specific KB path was given, use it; otherwise fall back to global KB.

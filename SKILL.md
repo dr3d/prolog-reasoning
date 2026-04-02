@@ -127,7 +127,8 @@ When the user states hard facts or a session is ending:
 2. Check if already in KB: `python3 prolog-executor.py "parent(ann, scott)." -kb ~/.hermes/knowledge-base.pl`
 3. Append new facts to `knowledge-base.pl` under appropriate section
 4. Add date comment: `% added 2026-04-01`
-5. Only after KB is updated — hand off to normal prose compaction
+5. Run `python3 prolog-executor.py --validate -kb ~/.hermes/knowledge-base.pl` — fix any warnings before proceeding
+6. Only after KB is validated — hand off to normal prose compaction
 
 > **Executor path**: examples above assume `prolog-executor.py` is symlinked into your project dir. If not, use the full path: `~/.hermes/skills/prolog-reasoning/prolog-executor.py`
 

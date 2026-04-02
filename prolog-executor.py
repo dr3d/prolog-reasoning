@@ -980,6 +980,73 @@ def run_manifest(kb_path: str = None) -> str:
     return manifest
 
 
+def _validate_term(term: Term, location: str) -> list:
+    """Return warning strings for arithmetic compounds found in data positions."""
+    warnings = []
+    if not isinstance(term, Compound):
+        return warnings
+    if term.functor in ('-', '+', '*', '/') and len(term.args) == 2:
+        l, r = term.args
+        # Date pattern: -(-(year, month), day)
+        if (term.functor == '-'
+                and isinstance(l, Compound) and l.functor == '-' and len(l.args) == 2
+                and isinstance(l.args[0], Number) and l.args[0].value > 1900
+                and isinstance(l.args[1], Number)
+                and isinstance(r, Number)):
+            y = int(l.args[0].value)
+            m = int(l.args[1].value)
+            d = int(r.value)
+            warnings.append(
+                f"{location}: unquoted date {y}-{m:02d}-{d:02d} "
+                f"— use '{y}-{m:02d}-{d:02d}' (quoted atom)"
+            )
+        else:
+            def _show(t):
+                if isinstance(t, Atom):
+                    return t.name
+                if isinstance(t, Number):
+                    return str(int(t.value)) if t.value == int(t.value) else str(t.value)
+                if isinstance(t, Compound) and t.functor in ('-', '+', '*', '/') and len(t.args) == 2:
+                    return f"{_show(t.args[0])}{t.functor}{_show(t.args[1])}"
+                return '?'
+            raw = f"{_show(l)}{term.functor}{_show(r)}"
+            warnings.append(
+                f"{location}: '{raw}' parsed as arithmetic — use underscores or single quotes"
+            )
+    else:
+        for arg in term.args:
+            warnings.extend(_validate_term(arg, location))
+    return warnings
+
+
+def run_validate(kb_path: str = None) -> None:
+    kb_path = kb_path or DATABASE
+    engine = PrologEngine()
+    try:
+        engine.load_file(kb_path)
+    except FileNotFoundError as e:
+        print(f"ERROR: {e}")
+        sys.exit(2)
+
+    warnings = []
+    for clause in engine.clauses:
+        head = clause.head
+        if isinstance(head, Compound):
+            loc = f"{head.functor}/{len(head.args)}"
+            for i, arg in enumerate(head.args):
+                for w in _validate_term(arg, f"{loc} arg {i + 1}"):
+                    warnings.append(w)
+
+    if warnings:
+        for w in warnings:
+            print(f"WARNING: {w}")
+        print(f"\n{len(engine.clauses)} clauses loaded, {len(warnings)} issue(s) found")
+        sys.exit(1)
+    else:
+        print(f"OK: {len(engine.clauses)} clauses loaded, no issues found")
+        sys.exit(0)
+
+
 def main() -> None:
     args = sys.argv[1:]
 
@@ -1001,6 +1068,10 @@ def main() -> None:
 
     if args[0] == "--manifest":
         print(run_manifest(kb_path))
+        sys.exit(0)
+
+    if args[0] == "--validate":
+        run_validate(kb_path)
         sys.exit(0)
 
     if args[0] == "--init":

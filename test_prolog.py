@@ -661,5 +661,53 @@ class TestKnownBugs(unittest.TestCase):
         self.assertEqual(result[0]["L"], "[1]")
 
 
+class TestValidate(unittest.TestCase):
+
+    def _warnings(self, kb: str) -> list:
+        e = eng(kb)
+        warnings = []
+        for clause in e.clauses:
+            head = clause.head
+            if isinstance(head, _mod.Compound):  # noqa
+                loc = f"{head.functor}/{len(head.args)}"
+                for i, arg in enumerate(head.args):
+                    warnings.extend(_mod._validate_term(arg, f"{loc} arg {i + 1}"))
+        return warnings
+
+    def test_clean_kb_no_warnings(self):
+        w = self._warnings("born(scott, 'Salem, MA'). age(scott, 42).")
+        self.assertEqual(w, [])
+
+    def test_unquoted_date_flagged(self):
+        w = self._warnings("event(deploy, 2026-03-31).")
+        self.assertEqual(len(w), 1)
+        self.assertIn("2026-03-31", w[0])
+        self.assertIn("unquoted date", w[0])
+
+    def test_quoted_date_clean(self):
+        w = self._warnings("event(deploy, '2026-03-31').")
+        self.assertEqual(w, [])
+
+    def test_hyphenated_name_flagged(self):
+        w = self._warnings("person(mary-ann).")
+        self.assertEqual(len(w), 1)
+        self.assertIn("mary-ann", w[0])
+
+    def test_underscore_name_clean(self):
+        w = self._warnings("person(mary_ann).")
+        self.assertEqual(w, [])
+
+    def test_nested_bad_term_flagged(self):
+        # Bad date nested inside a compound arg
+        w = self._warnings("log(server, event(deploy, 2026-01-15)).")
+        self.assertEqual(len(w), 1)
+        self.assertIn("2026-01-15", w[0])
+
+    def test_arithmetic_in_rule_body_not_checked(self):
+        # Arithmetic in rule body is intentional — validate only checks heads
+        w = self._warnings("double(X, Y) :- Y is X * 2.")
+        self.assertEqual(w, [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

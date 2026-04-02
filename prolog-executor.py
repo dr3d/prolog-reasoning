@@ -7,10 +7,12 @@ Usage:
 Output is always JSON on stdout.
 """
 
+import datetime
 import json
 import os
-import sys
 import re
+import shutil
+import sys
 from typing import List, Dict, Optional
 
 DATABASE = "knowledge-base.pl"  # relative to cwd — always the local project KB
@@ -859,6 +861,7 @@ def run_query(query: str, kb_path: str = None) -> dict:
 
 GLOBAL_KB = os.path.expanduser("~/.hermes/knowledge-base.pl")
 GLOBAL_MANIFEST = os.path.expanduser("~/.hermes/kb-manifest.json")
+BACKUP_DIR = os.path.expanduser("~/.hermes/backups")
 
 
 def _introspect_kb(path: str) -> Optional[Dict]:
@@ -915,12 +918,32 @@ def _manifest_is_current(kb_paths: list) -> bool:
     )
 
 
+def _backup_kb() -> None:
+    """Snapshot the global KB once per day into ~/.hermes/backups/. Keep 7 days."""
+    if not os.path.exists(GLOBAL_KB):
+        return
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    today = datetime.date.today().strftime("%Y-%m-%d")
+    dest = os.path.join(BACKUP_DIR, f"knowledge-base-{today}.pl")
+    if not os.path.exists(dest):
+        shutil.copy2(GLOBAL_KB, dest)
+    # Prune — keep the 7 most recent
+    backups = sorted(
+        f for f in os.listdir(BACKUP_DIR)
+        if f.startswith("knowledge-base-") and f.endswith(".pl")
+    )
+    for old in backups[:-7]:
+        os.unlink(os.path.join(BACKUP_DIR, old))
+
+
 def run_manifest(kb_path: str = None) -> str:
     """Introspect KB(s), write kb-manifest.json as a prefill messages array, return text.
 
     Skips the write if kb-manifest.json is already newer than all KB source files
     (mtime check). Returns existing manifest content in that case.
     """
+    _backup_kb()
+
     # Determine which KB files feed this manifest.
     target_path = kb_path if kb_path else GLOBAL_KB
     kb_sources = [target_path]

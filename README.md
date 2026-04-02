@@ -314,6 +314,28 @@ SQL requires a schema, a running server, and queries that enumerate everything e
 
 For a zero-dependency, no-server tool that travels with a Python script and reasons about relationships the way an agent naturally thinks about them, Prolog is the right fit.
 
+## Honest Scope
+
+This is an exploratory project. It works, it's useful, and it's being actively developed — but it has real limits worth understanding before you build on it.
+
+**What it's good at:**
+- Closed-world domains where facts are definite and stable: family trees, roles and permissions, game state, medical facts, legal rules, supply chain relationships
+- Answering questions that require traversing relationships the agent never explicitly stored
+- Catching contradictions and enforcing consistency that an LLM would miss across a long session
+- Giving the agent a source of truth that doesn't decay under context compression
+
+**What it's not:**
+- A general reasoning upgrade for LLMs. It doesn't make the model smarter — it gives it a deterministic sandbox for a specific class of logic problems.
+- Suitable for fuzzy, uncertain, or probabilistic knowledge. "Probably", "might", and "I think" don't belong in a Prolog KB. If you need uncertainty quantification, this is the wrong tool.
+- A replacement for the LLM's semantic layer. Natural language understanding, ambiguity resolution, and fact extraction are still the model's job. The KB stores what the model has already decided is true.
+- Production-hardened. The interpreter is a clean pure-Python implementation, not a battle-tested Prolog runtime. It covers the common subset well but has known gaps (see `FUTURE.md`).
+
+**The translation problem is real.** Everything depends on the LLM correctly converting natural language to valid Prolog facts. Small syntax errors cause silent failures. Schema drift — `parent_of` vs `parent` vs `is_parent` — breaks queries. SKILL.md addresses this with conventions and examples, but it's an ongoing challenge, not a solved one.
+
+**The right mental model:** This is a typed, queryable fact store with inference — not a knowledge graph, not a database, not a reasoning engine in the AI sense. Prolog does search, not thinking. What it gives you is determinism, losslessness, and the ability to derive conclusions from combinations of facts that an LLM would lose track of. That's the valuable part.
+
+---
+
 ## Where This Is Going
 
 > **Experimental.** Prolog as LLM memory is a new idea and we're actively exploring it. The engine works, the patterns are emerging, and the schema conventions are best guesses that will evolve. If you build on this, expect to iterate — and contributions are welcome.

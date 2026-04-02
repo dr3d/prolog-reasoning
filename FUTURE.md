@@ -177,6 +177,42 @@ Then any rule that looks up an entity can call `canonical/2` first. The agent wr
 
 ---
 
+## 10. Query Timeout / Search Budget
+
+**The problem:** Beyond `MAX_DEPTH = 500`, there is no per-query cost control. A query that generates an enormous number of intermediate solutions (e.g. a badly written `findall` over a large KB) blocks indefinitely. In an agent loop this means a hung subprocess with no signal to the caller.
+
+**What would help:**
+- A `--timeout N` CLI flag that kills the query after N milliseconds and returns `{"success": false, "error": "timeout"}`
+- Optionally a `--max-solutions N` flag to cap how many solutions are collected before returning
+
+**Implementation sketch:** Wrap `_solve` in a thread with a deadline, or use `signal.alarm` on Unix. On Windows, thread-based timeout is the only portable option. The CLI already catches exceptions and returns JSON errors — the caller interface doesn't change.
+
+**Complexity:** Low-to-moderate (portability). Worth doing before any public release.
+
+---
+
+## 11. Domain Suitability Documentation
+
+**The issue:** The tool gets misapplied when users try to use it for inherently fuzzy knowledge — opinions, uncertain statements, probabilistic beliefs, open-ended concepts. It fails silently in those cases: facts get stored, queries return wrong answers or no answers, and the user doesn't understand why.
+
+**What would help:** A clear "this tool is for X, not Y" section in SKILL.md and README, with concrete examples:
+
+| Domain | Suitable? | Reason |
+|--------|-----------|--------|
+| Family trees, roles, permissions | ✅ | Closed, stable, deterministic |
+| Game state, inventory, quests | ✅ | Closed world, explicit rules |
+| Legal / policy rules (structured) | ✅ | Rule-based, verifiable |
+| Medical facts, drug interactions | ✅ | Closed schema, ground truth |
+| Opinions, preferences | ⚠️ | Store as facts only if treated as ground truth (`prefers(scott, dark_mode)`) |
+| Uncertain / hedged statements | ❌ | "probably", "might", "I think" — do not extract |
+| General conversation, creative ideation | ❌ | Wrong tool entirely |
+
+The "When to Write / Do Not Extract" section in SKILL.md already touches this — it just needs to be sharper.
+
+**Complexity:** Zero engine work. Documentation only.
+
+---
+
 ## Priority / Sequencing
 
 If these were to be implemented in order of value vs. effort:
@@ -186,7 +222,9 @@ If these were to be implemented in order of value vs. effort:
 3. **`retractall/1`** — trivial to implement, needed for clean entity updates
 4. **Deduplication on assert** — trivial, prevents silent KB bloat
 5. **Entity aliases** — zero engine work, pure KB convention, document in SKILL.md
-6. **Proof traces** — moderate effort, turns the engine from a lookup tool into an explainable reasoner
-7. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
-8. **Rule safety / loop detection** — moderate effort, defensive value, nice for a public-facing tool
-9. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases
+6. **Domain suitability documentation** — zero engine work, prevents tool misuse
+7. **Proof traces** — moderate effort, turns the engine from a lookup tool into an explainable reasoner
+8. **Query timeout / search budget** — low-moderate effort, needed before any public release
+9. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
+10. **Rule safety / loop detection** — moderate effort, defensive value
+11. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases

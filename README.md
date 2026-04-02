@@ -198,17 +198,16 @@ git clone https://github.com/dr3d/prolog-reasoning.git ~/.hermes/skills/prolog-r
 
 ```bash
 cd ~/your-project
-ln -s ~/.hermes/skills/prolog-reasoning/prolog-executor.py .
-python3 prolog-executor.py --init blank
+python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py --init blank
 ```
 
 Or start from a domain-specific template:
 
 ```bash
-python3 prolog-executor.py --init personal      # biography, family, preferences
-python3 prolog-executor.py --init project       # tasks, owners, dependencies
-python3 prolog-executor.py --init game          # locations, inventory, quests, flags
-python3 prolog-executor.py --init access-control  # users, roles, permissions
+python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py --init personal      # biography, family, preferences
+python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py --init project       # tasks, owners, dependencies
+python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py --init game          # locations, inventory, quests, flags
+python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py --init access-control  # users, roles, permissions
 ```
 
 **3. Generate a manifest and wire it into Hermes prefill:**

@@ -149,13 +149,14 @@ python3 prolog-executor.py "scene_needed(X)."    -kb ~/myst/knowledge-base.pl
 
 ## Demos
 
-The `demos/` folder contains three self-contained worked examples — each with its own KB, runnable queries, and a README explaining what the engine is doing and why it matters:
+The `demos/` folder contains four self-contained worked examples — each with its own KB, runnable queries, and a README explaining what the engine is doing and why it matters:
 
 | Demo | Domain | Key reasoning |
 |------|--------|---------------|
 | [`demos/abyss-alpha/`](demos/abyss-alpha/) | Robotic outpost safety | Recursive fault detection through part hierarchies, negation-as-failure, transitive access control |
 | [`demos/neocircuit-global/`](demos/neocircuit-global/) | Supply chain compliance | Recursive vendor chain traversal, transitive sanctions risk — one bad actor poisons the whole product |
 | [`demos/world-builder/`](demos/world-builder/) | Narrative continuity | Epistemic facts, faction relationships, world consistency checking for long-form fiction |
+| [`demos/polypharmacy/`](demos/polypharmacy/) | Drug interaction safety | Three-hop derived risk inference — engine derives bleeding risk from two independent facts, uses it to block a third drug |
 
 Each demo is runnable immediately from the repo root. See the individual READMEs for queries and expected outputs.
 
@@ -170,7 +171,7 @@ Each demo is runnable immediately from the repo root. See the individual READMEs
 | `knowledge-base.pl` | The fact store — created per project via `--init`, edit directly or via agent |
 | `scripts/generate-manifest.sh` | Regenerate KB manifest after writes |
 | `templates/` | Domain starter KBs (`blank`, `personal`, `project`, `game`, `access-control`) — used by `--init` |
-| `demos/` | Worked examples: three self-contained KBs with runnable queries and explanations |
+| `demos/` | Worked examples: four self-contained KBs with runnable queries and explanations |
 | `EXAMPLE-GAME-DEV.md` | Realistic multi-session example: game dev using the skill across weeks |
 | `FUTURE.md` | Design notes: forward chaining, CLP constraints, conflict detection |
 | `AGENT-INSTALL.md` | Agent-executable install instructions with explicit conditionals |

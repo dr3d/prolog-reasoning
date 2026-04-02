@@ -1,3 +1,25 @@
+# Session Notes — 2026-04-02 (session 5)
+
+## Session 5 — Gemini integration, --validate, test expansion
+
+### Gemini collaboration
+Antigravity loaded the project with Gemini 2.5, which implemented `retractall/1` and `assertz_unique/1` — both were already in FUTURE.md. Changes reviewed, tests passed, accepted and pushed. Gemini also produced a DEEP_DIVE_PLAN.md and GEMINI-NOTES.md; both absorbed (one pitfall extracted into SKILL.md: relationship-first storage) and deleted. Nothing else was net-new.
+
+### retractall/1 and assertz_unique/1
+Both shipped in one commit. `retractall` mirrors existing `retract/1` — same `_clause_to_term` path, removes all matches, always succeeds. `assertz_unique` uses structural `==` equality to prevent KB bloat. 2 tests added. Both removed from FUTURE.md.
+
+### --validate flag
+New CLI mode catches the primary silent failure: unquoted dates and hyphenated names parsed as arithmetic by the Prolog parser. Walks clause heads after load (bodies excluded — arithmetic there is intentional), flags compounds with arithmetic functors in data positions.
+
+Date pattern `-(-(year, month), day)` detected specifically and shows the exact fix: `'2026-03-31'`. Hyphen between names shows both options: `mary_ann` or `'mary-ann'`. Arithmetic expressions (`10+5`, `3*4`) show quoted form. Every warning is self-contained — LLM can apply the fix without guessing.
+
+Added to compaction workflow in SKILL.md (step 5 after writing facts). Added to pitfalls cross-reference. Added to README quick-start. FUTURE.md §5 updated — `--validate` now exists for syntax; cycle detection is the remaining open item there.
+
+### Test expansion
+26 `TestValidate` tests added (132 total): all four arithmetic operators, arg position reporting, functor/arity in warnings, pre-1900 years, zero-arity heads, nested bad terms, quoted vs unquoted variants, mixed KBs, rule bodies excluded, and CLI exit codes + output strings end-to-end via `run_validate` with temp files.
+
+---
+
 # Session Notes — 2026-04-02 (continued)
 
 ## Session 4 continued — demos, critique reviews, README polish

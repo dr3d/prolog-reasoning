@@ -97,7 +97,7 @@ python3 prolog-executor.py --check
 **What would help:**
 - Static analysis on load: detect obvious cycles (A derives B, B derives A with no base case)
 - Better error reporting: when depth limit is hit, report the call stack so the problematic rule is identifiable
-- A `--validate` flag that loads the KB, runs a static cycle check, and reports suspicious rules without executing queries
+- Extend `--validate` (already ships syntax checks) with a static cycle check — DFS on the predicate dependency graph, report suspicious rules without executing queries
 
 **Complexity:** Cycle detection is a graph problem (DFS on the predicate dependency graph). Static analysis only — no runtime changes needed. Moderate complexity.
 

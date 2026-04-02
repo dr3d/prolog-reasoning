@@ -58,20 +58,26 @@ If you want a domain-specific starter instead of blank, replace `blank` with one
 
 ## Step 4 — Generate the manifest
 
+Run from the project directory (where `knowledge-base.pl` lives):
+
 ```bash
-python3 prolog-executor.py --manifest
+python3 prolog-executor.py --manifest -kb knowledge-base.pl
 ```
 
-This writes `~/.hermes/kb-manifest.json` as a prefill messages array and prints the manifest text. Verify the output looks like:
+This writes `~/.hermes/kb-manifest.json` and prints the manifest. The `-kb knowledge-base.pl` tells the manifest to include the project KB. If `~/.hermes/knowledge-base.pl` also exists, it will appear as a second block automatically.
+
+Verify the output contains a `## Knowledge Base` block for the project:
 
 ```
-## Global Knowledge Base
+## Knowledge Base
 Facts: N  Rules: N
 Predicates: ...
 Known entities: ...
+Skill: prolog-reasoning
+Query: python3 prolog-executor.py "<prolog_query>" -kb knowledge-base.pl
 ```
 
-If the command fails, check that `~/.hermes/knowledge-base.pl` exists.
+If the command fails with "file not found", confirm `knowledge-base.pl` exists in the current directory (Step 3 should have created it).
 
 ---
 
@@ -111,7 +117,7 @@ grep -A1 "^agent:" ~/.hermes/config.yaml | grep prefill_messages_file && echo CO
 ## Step 6 — Smoke test
 
 ```bash
-python3 prolog-executor.py "1 is 1."
+python3 prolog-executor.py "1 is 1." -kb knowledge-base.pl
 ```
 
 Expected output:
@@ -120,7 +126,7 @@ Expected output:
 {"success": true, "bindings": [{}]}
 ```
 
-Empty bindings `[{}]` means the ground query succeeded. If `success` is `false`, check that `knowledge-base.pl` exists in the current directory.
+Empty bindings `[{}]` means the ground query succeeded. If `success` is `false`, confirm `knowledge-base.pl` exists in the current directory.
 
 ---
 

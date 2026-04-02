@@ -13,7 +13,7 @@ import sys
 import re
 from typing import List, Dict, Optional
 
-DATABASE = os.path.join(os.path.dirname(__file__), "knowledge-base.pl")
+DATABASE = "knowledge-base.pl"  # relative to cwd — always the local project KB
 MAX_DEPTH = 500
 
 

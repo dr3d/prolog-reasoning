@@ -32,6 +32,34 @@
 
 ---
 
+## Session 3 continued — doc/engine polish (2026-04-01)
+
+**Date/hyphen gotcha (caught by Nemotron-nano-4B):**
+- 4B model reviewed SKILL.md correctly but then wrote `milestone(beta_deadline, 2026-05-12).` in its own example KB — exactly the bug it had just read about
+- `2026-05-12` parses as arithmetic: 2026 − 5 − 12 = 2009. Silent wrong value, no error
+- Fixed: Pitfall entry now says "hyphens are subtraction" and names dates explicitly alongside names; Events schema block now shows a WRONG example with the evaluated result
+
+**Project KB placement bug:**
+- `DATABASE` constant was `os.path.dirname(__file__) + "knowledge-base.pl"` — resolved to the skill dir (`~/.hermes/skills/prolog-reasoning/`), not cwd. Unqualified queries read the wrong KB
+- Changed to bare `"knowledge-base.pl"` (cwd-relative). This is what caused project KBs to land next to the global one in `~/.hermes/`
+- AGENT-INSTALL.md Step 4 updated: `--manifest` now uses `-kb knowledge-base.pl` so project KB goes into manifest
+
+**No-args default:**
+- `python3 prolog-executor.py` with no arguments returned a JSON error ("no query provided")
+- Now defaults to `--manifest -kb knowledge-base.pl` — shows local KB manifest, like `git status`
+
+**EXAMPLE-GAME-DEV.md:**
+- Added explicit keycard KB update in Session 5 (was implicit — query result didn't make sense without it)
+- `-kb` flags added then removed as executor defaults evolved — file is now clean, no explicit `-kb` needed for local KB queries
+
+**Collaboration note:**
+- Qwen3.5-27B rewrote SKILL.md structure (decision tree, wrong/right examples, behavioral opening)
+- Claude fixed remaining issues (broken query, missing When-to-Write section, rules in schema)
+- Nemotron-nano-4B did a useful review pass and caught the date gotcha by reproducing it
+- All three models contributed to the final state
+
+---
+
 ## Session 2 update (2026-04-01)
 
 Re-confirmed the two root causes below. Found one straggler: `scripts/generate-manifest.sh`

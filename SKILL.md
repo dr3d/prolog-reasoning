@@ -223,7 +223,7 @@ If the user corrects a fact, find and update `knowledge-base.pl` directly — do
 
 ## Pitfalls
 
-- **Hyphens are subtraction**: anything with a `-` that isn't quoted is arithmetic. This catches names (`mary-ann`) AND dates (`2026-05-12` = 2009). Always quote: `'mary-ann'`, `'2026-05-12'`
+- **Hyphens are subtraction**: anything with a `-` that isn't quoted is arithmetic. This catches names (`mary-ann`) AND dates (`2026-05-12` = 2009). Always quote: `'mary-ann'`, `'2026-05-12'`. Run `--validate` after writing to catch these silently.
 - **No standalone atoms**: `rtx_5090.` by itself is unqueryable noise. Always wrap in a predicate: `hardware(rtx_5090).` — then `hardware(X)` lists everything in that category.
 - **Variable names**: must start uppercase (`X`, `Parent`, `Role`)
 - **No built-in list predicates**: the executor has no `member/2`, `append/3` — define them in the KB if needed

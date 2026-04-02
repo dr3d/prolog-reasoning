@@ -73,6 +73,9 @@ python3 prolog-executor.py "factorial(6, F)."
 ```bash
 # See what's in the KB
 python3 prolog-executor.py --manifest
+
+# Check KB for syntax problems (unquoted dates, hyphenated names parsed as arithmetic)
+python3 prolog-executor.py --validate
 ```
 
 None of `ancestor`, `allowed`, or `can_fly` are stored as facts — they're derived by rules from a handful of `parent`, `role`, and `bird` assertions. That's the point.

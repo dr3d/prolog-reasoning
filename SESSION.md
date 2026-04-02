@@ -1,5 +1,16 @@
 # Session Notes — 2026-04-01
 
+## Session 2 update (2026-04-01)
+
+Re-confirmed the two root causes below. Found one straggler: `scripts/generate-manifest.sh`
+still defaulted to `kb-manifest.md` and commented `prefill_messages_file` without the
+`agent:` nesting. Fixed — script now defaults to `~/.hermes/kb-manifest.json` and documents
+the required `agent:` nesting.
+
+**Next step:** retest prefill injection on Mac mini with corrected config.yaml and `.json` manifest.
+
+---
+
 ## Status: prefill injection fixed
 
 The prefill bug is resolved. Two root causes found and fixed:

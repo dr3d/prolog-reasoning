@@ -7,17 +7,21 @@
 #
 # Defaults:
 #   kb_path     — knowledge-base.pl next to the executor
-#   output_path — ~/.hermes/kb-manifest.md
+#   output_path — ~/.hermes/kb-manifest.json
 #
-# Add to Hermes config:
-#   prefill_messages_file: /Users/you/.hermes/kb-manifest.md
+# Output format: JSON array of {role, content} dicts required by Hermes:
+#   [{"role": "user", "content": "..."}, {"role": "assistant", "content": "Understood..."}]
+#
+# Add to Hermes config.yaml (must be nested under agent:):
+#   agent:
+#     prefill_messages_file: ~/.hermes/kb-manifest.json
 #
 # Call this after any KB write so the manifest stays current.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXECUTOR="$SCRIPT_DIR/../prolog-executor.py"
 KB="${1:-}"
-OUTPUT="${2:-$HOME/.hermes/kb-manifest.md}"
+OUTPUT="${2:-$HOME/.hermes/kb-manifest.json}"
 
 if [ -n "$KB" ]; then
     python3 "$EXECUTOR" --manifest -kb "$KB" > "$OUTPUT"

@@ -77,13 +77,16 @@ If the command fails, check that `~/.hermes/knowledge-base.pl` exists.
 
 ## Step 5 — Wire the manifest into Hermes prefill
 
+**CRITICAL:** The `prefill_messages_file` key MUST be nested under `agent:` in config.yaml. 
+The CLI reads it from `CLI_CONFIG["agent"]["prefill_messages_file"]`. Top-level placement only works for gateway/cron, NOT interactive CLI sessions.
+
 Check whether `~/.hermes/config.yaml` exists:
 
 ```bash
 ls ~/.hermes/config.yaml 2>/dev/null && echo EXISTS || echo MISSING
 ```
 
-**If MISSING:** create it:
+**If MISSING:** create it with proper nesting:
 
 ```bash
 cat > ~/.hermes/config.yaml << 'EOF'
@@ -92,21 +95,16 @@ agent:
 EOF
 ```
 
-**If EXISTS:** check whether `prefill_messages_file` is already set:
+**If EXISTS:** check whether `prefill_messages_file` is already set under `agent:`:
 
 ```bash
-grep prefill_messages_file ~/.hermes/config.yaml && echo SET || echo MISSING
+grep -A1 "^agent:" ~/.hermes/config.yaml | grep prefill_messages_file && echo CORRECTLY_SET || echo NEEDS_FIXING
 ```
 
-- If SET: leave it alone and tell the user the existing value — they may want to review it.
-- If MISSING: append under the `agent:` key:
+- If CORRECTLY_SET: leave it alone and tell the user the existing value.
+- If NEEDS_FIXING or if `prefill_messages_file` exists at top level (WRONG): you must edit config.yaml to move/add it under `agent:`. Use a YAML editor or patch tool to ensure proper nesting.
 
-```bash
-cat >> ~/.hermes/config.yaml << 'EOF'
-agent:
-  prefill_messages_file: ~/.hermes/kb-manifest.json
-EOF
-```
+**Common pitfall:** Don't just append `agent:\n  prefill_messages_file: ...` to the end of an existing config that already has an `agent:` section — this creates duplicate keys and breaks YAML parsing. Instead, insert it into the existing `agent:` block.
 
 ---
 

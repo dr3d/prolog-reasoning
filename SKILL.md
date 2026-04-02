@@ -1,6 +1,6 @@
 ---
 name: prolog-reasoning
-description: "Store definite facts when stated; query before answering. Invoke this skill whenever:
+description: "For hard facts and ground truths requiring flawless memory. Use this skill whenever:
 
   1. The user states something definitively true — a relationship, event, role, location, or preference. Write immediately, not at session end.
   2. The user asks a factual question about a known person, entity, or policy. Query the KB first; never rely on recall.
@@ -172,12 +172,13 @@ python3 prolog-executor.py --manifest
 To keep it current, regenerate after every KB write:
 ```bash
 ~/.hermes/skills/prolog-reasoning/scripts/generate-manifest.sh [kb_path] [output_path]
-# default output: ~/.hermes/kb-manifest.md
+# default output: ~/.hermes/kb-manifest.json
 ```
 
 Then in `~/.hermes/config.yaml`:
 ```yaml
-prefill_messages_file: /Users/you/.hermes/kb-manifest.md
+agent:
+  prefill_messages_file: ~/.hermes/kb-manifest.json
 ```
 
 With this in place the agent wakes up every session already knowing what entities and predicates exist in the KB. Fact recall becomes ambient — no decision required.
@@ -218,6 +219,16 @@ Empty bindings `[{}]` means the query succeeded with no variables (ground query 
 - Anonymous variable `_` matches anything, binds nothing
 - Don't assert both a fact and a rule that derives the same predicate — the fact is redundant and causes duplicate results
 - Depth limit is 500 — deep recursive rules will error; prefer iterative facts over deep recursion
+
+## Common Mistakes
+
+**Using generic memory instead of KB**: Don't use the `memory` tool for hard facts that should be Prolog facts. The `memory` tool (target='user' or 'memory') is for user preferences, environment quirks, and procedural notes - NOT for factual data like:
+- Family relationships ✓ → Use `parent/2`, `sibling/2`, etc. in KB
+- Game collections ✓ → Use `game/1`, `owns/2` in KB  
+- Locations of files ✓ → Use `location/2` in KB
+- Events that occurred ✓ → Use `event/2` in KB
+
+The `memory` tool is lossy and not queryable. The Prolog KB is the authoritative source for hard facts.
 
 ### Executor Implementation Pitfalls
 

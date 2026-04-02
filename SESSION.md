@@ -18,6 +18,12 @@ Added to compaction workflow in SKILL.md (step 5 after writing facts). Added to 
 ### Test expansion
 26 `TestValidate` tests added (132 total): all four arithmetic operators, arg position reporting, functor/arity in warnings, pre-1900 years, zero-arity heads, nested bad terms, quoted vs unquoted variants, mixed KBs, rule bodies excluded, and CLI exit codes + output strings end-to-end via `run_validate` with temp files.
 
+### Daily KB backup
+`--manifest` now snapshots `~/.hermes/knowledge-base.pl` to `~/.hermes/backups/knowledge-base-YYYY-MM-DD.pl` on first call of the day. Keeps last 7 days. Silent, no agent steps, no new flag. Recovery from calamitous LLM writes.
+
+### README updated
+`retractall/1` and `assertz_unique/1` added to capabilities list. `--validate` description expanded (exit codes, what it catches). Daily backup behaviour documented near manifest section.
+
 ---
 
 # Session Notes — 2026-04-02 (continued)

@@ -75,6 +75,7 @@ python3 prolog-executor.py "factorial(6, F)."
 python3 prolog-executor.py --manifest
 
 # Check KB for syntax problems (unquoted dates, hyphenated names parsed as arithmetic)
+# Each warning shows the exact fix. Exit 0 = clean, exit 1 = issues found.
 python3 prolog-executor.py --validate
 ```
 
@@ -230,6 +231,8 @@ agent:
 
 The manifest regenerates automatically when the KB has changed — `--manifest` compares file modification times and skips the write if the manifest is already newer. You can call it as often as you like without redundant disk writes.
 
+`--manifest` also snapshots the global KB to `~/.hermes/backups/knowledge-base-YYYY-MM-DD.pl` once per day. The last 7 days are kept automatically — silent calamity protection with no extra steps.
+
 To force a regeneration after KB writes:
 
 ```bash
@@ -267,7 +270,7 @@ Once the manifest is wired into `config.yaml` it stays wired. The only ongoing m
 - `is/2` and arithmetic: `+  -  *  //  /  mod`
 - Comparisons: `>  <  >=  =<  =:=  =\=`
 - `findall/3`, negation as failure (`\+`), cut (`!`)
-- `assert/1`, `assertz/1`, `asserta/1`, `retract/1` (non-deterministic)
+- `assert/1`, `assertz/1`, `asserta/1`, `retract/1` (non-deterministic), `retractall/1`, `assertz_unique/1`
 - `functor/3`, `clause/2`
 - Lists, quoted atoms, anonymous variables
 - Depth limit: 500 (prevents runaway recursion)

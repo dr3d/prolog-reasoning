@@ -1,3 +1,48 @@
+# Session Notes — 2026-04-02 (continued)
+
+## Session 4 continued — demos, critique reviews, README polish
+
+### Polypharmacy demo
+
+New demo added: `demos/polypharmacy/`. Patient on 7 drugs for 5 conditions. Engine derives `at_risk(margaret, bleeding)` from warfarin + thrombocytopenia (never stored, always inferred), uses that derived state to block ibuprofen — three-hop inference. Active regimen audit surfaces amiodarone interacting with warfarin, digoxin, and atorvastatin simultaneously via CYP2C9, P-gp, and CYP3A4 enzyme inhibition. Strongest demo in the set.
+
+Found and fixed another engine bug while building it: `query()` was using `_deref` instead of `_apply_bindings` to serialize result variables — compound terms showed internal `_Gn` variable names instead of resolved values (e.g. `direct_interaction(_G25, _G26)` instead of `direct_interaction(warfarin, bleeding_risk)`). Fixed, test added. 104 tests total.
+
+### Demos folder
+
+`scenarios/` renamed to `demos/`. All three original READMEs reworked — wrong expected outputs corrected, copy-paste script errors removed, stub rules documented. `demos/README.md` index added. Top-level README updated with demos table (four entries) and count.
+
+### Symlink removal
+
+`ln -s` step removed from README and AGENT-INSTALL.md — full path invocation is simpler and correct.
+
+### Manifest mtime caching
+
+`run_manifest()` now skips regeneration if `kb-manifest.json` is already newer than all KB source files. One `stat()` per KB file, otherwise no work done.
+
+### CHATGPT-IDEAS.md / CRITIQUE.md — absorbed and deleted
+
+Both external review files consumed, useful ideas extracted into FUTURE.md, files deleted.
+
+**FUTURE.md additions from reviews:**
+- `retractall/1` — trivial missing built-in, needed for clean entity updates
+- Deduplication on assert — prevent silent KB bloat
+- Entity aliases as Prolog facts (not Python-side lookup table)
+- Query timeout / search budget — needed before public release
+- Domain suitability documentation — prevent tool misuse
+
+**Deliberate non-goals:** probabilistic reasoning (philosophical mismatch with ground-truth KB), Python-side normalization layer (agent's job), IR layer (SKILL.md handles it).
+
+### README: Honest Scope section
+
+New section added explaining what the tool is and isn't — closed-world domains, no fuzzy knowledge, not a general reasoning upgrade, not production-hardened. The translation problem called out explicitly. Right mental model: "typed queryable fact store with inference." Preempts misuse and sets expectations for an exploratory project.
+
+### Acknowledgements updated
+
+Nemotron-3-nano-4B added — contributed manifest injection diagnosis and caught the date/hyphen gotcha. Qwen3.5-27B continued collaboration. Claude Sonnet 4.6 listed for engine/test/demo work.
+
+---
+
 # Session Notes — 2026-04-02
 
 ## Session 4 (2026-04-02) — test suite, engine fixes, demos, manifest caching

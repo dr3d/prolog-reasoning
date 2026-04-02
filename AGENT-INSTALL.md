@@ -43,11 +43,10 @@ Check whether `prolog-executor.py` already exists here:
 ls prolog-executor.py 2>/dev/null && echo EXISTS || echo MISSING
 ```
 
-**If MISSING:** symlink the executor (so it stays current with the skill) and initialize a blank knowledge base:
+**If MISSING:** initialize a blank knowledge base:
 
 ```bash
-ln -s ~/.hermes/skills/prolog-reasoning/prolog-executor.py ./prolog-executor.py
-python3 prolog-executor.py --init blank
+python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py --init blank
 ```
 
 If you want a domain-specific starter instead of blank, replace `blank` with one of: `personal`, `project`, `game`, `access-control`.
@@ -61,7 +60,7 @@ If you want a domain-specific starter instead of blank, replace `blank` with one
 Run from the project directory (where `knowledge-base.pl` lives):
 
 ```bash
-python3 prolog-executor.py --manifest -kb knowledge-base.pl
+python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py --manifest -kb knowledge-base.pl
 ```
 
 This writes `~/.hermes/kb-manifest.json` and prints the manifest. The `-kb knowledge-base.pl` tells the manifest to include the project KB. If `~/.hermes/knowledge-base.pl` also exists, it will appear as a second block automatically.
@@ -74,7 +73,7 @@ Facts: N  Rules: N
 Predicates: ...
 Known entities: ...
 Skill: prolog-reasoning
-Query: python3 prolog-executor.py "<prolog_query>" -kb knowledge-base.pl
+Query: python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py "<prolog_query>" -kb knowledge-base.pl
 ```
 
 If the command fails with "file not found", confirm `knowledge-base.pl` exists in the current directory (Step 3 should have created it).
@@ -117,7 +116,7 @@ grep -A1 "^agent:" ~/.hermes/config.yaml | grep prefill_messages_file && echo CO
 ## Step 6 — Smoke test
 
 ```bash
-python3 prolog-executor.py "1 is 1." -kb knowledge-base.pl
+python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py "1 is 1." -kb knowledge-base.pl
 ```
 
 Expected output:
@@ -136,4 +135,4 @@ Tell the user:
 - Where the skill was installed (`~/.hermes/skills/prolog-reasoning/`)
 - Where the KB lives (current project directory)
 - That the manifest is wired into `~/.hermes/config.yaml`
-- That they should regenerate the manifest after any KB write: `python3 prolog-executor.py --manifest`
+- That they should regenerate the manifest after any KB write: `python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py --manifest`

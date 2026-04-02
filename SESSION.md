@@ -1,3 +1,56 @@
+# Session Notes — 2026-04-02
+
+## Session 4 (2026-04-02) — test suite, engine fixes, demos, manifest caching
+
+### Test suite (103 tests)
+
+Zero tests existed. Writing the suite immediately exposed 5 real engine bugs:
+
+1. **`\+` prefix hijacked by infix `+`** — `\+(fail)` was parsed as `\` applied to `+(fail)` because the infix loop ran before the prefix check. Fixed by moving the `\+` check above the infix loop.
+
+2. **List detection over-eager** — `[] = []` was being swallowed as list syntax because the guard was `s.startswith('[') and s.endswith(']')`. Fixed with `_bracket_end()` — only treat as a list if the `[` at position 0 closes at the very last character.
+
+3. **Outer parens not stripped** — `\+(true)` parsed the inner `(true)` as an atom, not the built-in `true`. Fixed by adding a paren-stripping pass in `_parse_term`.
+
+4. **Anonymous variables aliased** — `[_, _] = [1, 2]` failed because both `_` shared the same binding slot. Fixed by calling `_rename_anon()` on the query goal before solving.
+
+5. **`mod` missing from infix operator list** — `X is 10 mod 3` returned no solutions. Fixed by adding `mod` to the operator loop.
+
+5 expected failures document confirmed open issues: cut escaping `findall/3`, `(A,B)` conjunction as subgoal, `assert((head :- body))` syntax, raw query conjunction, occurs check.
+
+### Engine fix: compound term deref in results
+
+`query()` was using `_deref` to serialize result variables. `_deref` stops at a Compound without resolving its args through the bindings — so compound reason terms like `direct_interaction(warfarin, bleeding_risk)` came out as `direct_interaction(_G25, _G26)`. Fixed by switching to `_apply_bindings` which recursively resolves the full term. Test added.
+
+### Manifest mtime caching
+
+`run_manifest()` now skips regeneration if `kb-manifest.json` is already newer than all KB source files. Comparison via `os.path.getmtime`. Returns existing manifest content in that case. Safe to call repeatedly — cost is one `stat()` per KB file.
+
+### Symlink removed
+
+README and AGENT-INSTALL.md both had a `ln -s` step in project setup instructions. Removed — full path to the executor is simpler and correct.
+
+### Demos folder
+
+`scenarios/` renamed to `demos/`. Four self-contained worked examples added, each with a KB, runnable queries with verified expected outputs, and a README explaining the reasoning:
+
+- **abyss-alpha** — robotic outpost safety. Recursive fault detection through part hierarchy (`gimbal_lock` → `thruster_main` → `rov_01`). Numeric clearance comparison. Original READMEs had wrong expected outputs (drone_alpha listed as mission-ready — no battery fact exists for it).
+
+- **neocircuit-global** — supply chain compliance. Recursive vendor chain traversal. `Volt-Tech Inc` is certified but its upstream supplier `Primary-Ores LLC` is sanctioned — `has_risk` still fires. Original `audit-chain.sh` was a verbatim copy of abyss-alpha's script with wrong queries throughout. Fully replaced.
+
+- **world-builder** — narrative continuity. Epistemic facts, faction relationships, `world_is_consistent` integrity check. Several rules reference undefined predicates (`connected/2`, `originally_from/2`, etc.) — documented honestly as stubs with instructions on what facts to add to make them fire.
+
+- **polypharmacy** — drug interaction safety. Patient on 7 drugs for 5 conditions. Engine derives `at_risk(margaret, bleeding)` from two independent facts (warfarin + thrombocytopenia) — never stored, always inferred. Uses that derived state to block ibuprofen via a third rule (`elevated_risk(bleeding)` → NSAID contraindicated). Three-hop inference. Active regimen audit surfaces amiodarone interacting with warfarin, digoxin, and atorvastatin simultaneously via enzyme pathway inhibition (CYP2C9, P-gp, CYP3A4). The amiodarone finding is the clearest demonstration of what Prolog sees that an LLM would miss.
+
+### Known limitations documented
+
+- Conjunction in raw query strings (`"A, B"`) not supported — parser doesn't handle top-level comma. Workaround: wrap in a rule body.
+- `(A, B)` parenthesized conjunction as `findall` subgoal doesn't work for same reason.
+- `assert((head :- body))` — `:-` not in the infix operator list.
+- Occurs check omitted (standard Prolog behaviour, but `X = f(X)` will infinite-loop in `_term_to_str` if the binding is ever serialized).
+
+---
+
 # Session Notes — 2026-04-01
 
 ## Session 3 (2026-04-01) — trigger problem solved

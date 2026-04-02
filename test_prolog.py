@@ -476,6 +476,26 @@ class TestAssertRetract(unittest.TestCase):
         result = e.query("double(5, R)")
         self.assertEqual(result[0]["R"], "10")
 
+    def test_retractall_removes_all_matching_clauses(self):
+        e = eng("fact(a, 1). fact(b, 2). fact(a, 3).")
+        # Retract all fact(a, _)
+        list(e.query("retractall(fact(a, _))"))
+        # Only fact(b, 2) should remain
+        self.assertEqual([s["X"] for s in e.query("fact(b, X)")], ["2"])
+        self.assertFalse(e.query("fact(a, _)"))
+
+    def test_assertz_unique_avoids_duplicates(self):
+        e = eng("foo(1).")
+        # Assert identical fact
+        list(e.query("assertz_unique(foo(1))"))
+        # Check we really only have one solution 
+        res = e.query("foo(X)")
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["X"], "1")
+        # Assert different fact
+        list(e.query("assertz_unique(foo(2))"))
+        self.assertEqual([s["X"] for s in e.query("foo(X)")], ["1", "2"])
+
 
 # ===========================================================================
 # Negation as Failure

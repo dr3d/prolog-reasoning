@@ -406,6 +406,20 @@ class PrologEngine:
                         i += 1
                 return
 
+            if f == 'retractall' and n == 1:
+                pattern = self._deref(args[0], bindings)
+                i = 0
+                while i < len(self.clauses):
+                    clause_term = self._clause_to_term(self.clauses[i])
+                    u = self._unify(pattern, clause_term, bindings)
+                    if u is not None:
+                        self.clauses.pop(i)
+                        # Do NOT yield here, we want to remove all and succeed once at the end
+                    else:
+                        i += 1
+                yield bindings
+                return
+
             if f == 'functor' and n == 3:
                 term_arg = self._deref(args[0], bindings)
                 if isinstance(term_arg, Variable):
@@ -470,6 +484,23 @@ class PrologEngine:
                 clause = self._term_to_clause(clause_term)
                 if clause is not None:
                     self.clauses.append(clause)
+                    yield bindings
+                return
+
+            if f == 'assertz_unique' and n == 1:
+                clause_term = self._deref(args[0], bindings)
+                clause = self._term_to_clause(clause_term)
+                if clause is not None:
+                    # Check for an identical existing clause
+                    exists = False
+                    clause_t = self._clause_to_term(clause)
+                    for existing_clause in self.clauses:
+                        existing_t = self._clause_to_term(existing_clause)
+                        if clause_t == existing_t:
+                            exists = True
+                            break
+                    if not exists:
+                        self.clauses.append(clause)
                     yield bindings
                 return
 

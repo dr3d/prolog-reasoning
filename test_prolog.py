@@ -396,6 +396,13 @@ class TestLists(unittest.TestCase):
         result = query("", "[[1, 2], [3, 4]] = [[H|_]|_]")
         self.assertEqual(result[0]["H"], "1")
 
+    def test_compound_result_fully_dereffed(self):
+        # Regression: result variables that bind to a Compound whose args are
+        # themselves variables must be fully dereferenced — not show _Gn names.
+        kb = "wrap(foo(1, bar))."
+        result = query(kb, "wrap(X)")
+        self.assertEqual(result[0]["X"], "foo(1, bar)")
+
     def test_findall_into_list(self):
         kb = "fruit(apple). fruit(banana). fruit(cherry)."
         result = query(kb, "findall(F, fruit(F), Fruits)")

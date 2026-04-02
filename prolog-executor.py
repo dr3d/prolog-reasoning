@@ -251,7 +251,7 @@ class PrologEngine:
                 if query_vars:
                     row = {}
                     for v in query_vars:
-                        val = self._deref(Variable(v), bindings)
+                        val = self._apply_bindings(Variable(v), bindings)
                         row[v] = self._term_to_str(val)
                     if row not in solutions:
                         solutions.append(row)

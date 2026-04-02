@@ -45,7 +45,20 @@ python3 prolog-executor.py "world_is_consistent" -kb demos/world-builder/knowled
 
 ---
 
-## Running All Three
+## [polypharmacy](polypharmacy/) — Drug Interaction Safety
+
+A 68-year-old patient on seven medications for five chronic conditions. The question: is it safe to add ibuprofen? The answer requires holding three independent facts simultaneously — anticoagulant on board, platelet disorder present, therefore elevated bleeding risk — and using that derived state to block the NSAID. Three hops. The engine derives the risk state nobody stored, then uses it.
+
+**The sharp edge:** amiodarone is already interacting with three other drugs in the current regimen through enzyme pathway inhibition. No single interaction fact captures all three — the engine assembles them from substrate and inhibitor facts.
+
+```bash
+python3 prolog-executor.py "active_interaction(margaret, DrugA, DrugB, Reason)" -kb demos/polypharmacy/knowledge-base.pl
+# warfarin/amiodarone, digoxin/amiodarone, atorvastatin/amiodarone — all live problems
+```
+
+---
+
+## Running All Four
 
 ```bash
 # From the repo root:

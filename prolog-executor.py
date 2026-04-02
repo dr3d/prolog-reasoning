@@ -165,8 +165,21 @@ class PrologEngine:
         if s == '[]':
             return Atom('[]')
 
-        # List: [...]
-        if s.startswith('[') and s.endswith(']'):
+        # Prefix \+ — must precede infix loop so the '+' in '\+' isn't
+        # mistaken for an infix addition operator.
+        if s.startswith('\\+'):
+            inner = self._parse_term(s[2:].strip())
+            if inner is not None:
+                return Compound('\\+', [inner])
+
+        # Strip outer parentheses: (expr) → parse expr.
+        # Handles \+(true), \+(foo(x)), (X + Y) as subexpressions, etc.
+        if s.startswith('(') and _bracket_end(s, 0) == len(s) - 1:
+            return self._parse_term(s[1:-1].strip())
+
+        # List: [...] — only when the '[' at position 0 closes at the very end.
+        # Guard against "[] = []" etc. being swallowed as list syntax.
+        if s.startswith('[') and _bracket_end(s, 0) == len(s) - 1:
             inner = s[1:-1].strip()
             if not inner:
                 return Atom('[]')
@@ -190,20 +203,15 @@ class PrologEngine:
         # Infix operators — MUST come before Variable check so "X \= Y" isn't
         # swallowed whole as a variable name. Check longest operators first.
         # Low-precedence operators first so they become the outermost split.
+        # 'mod' must appear before '*' (same precedence group, word op).
         for op in ('=:=', '=\\=', '\\=', '>=', '=<', 'is', '=', '>', '<',
-                   '+', '-', '*', '//', '/'):
+                   '+', '-', 'mod', '*', '//', '/'):
             idx = _find_infix(s, op)
             if idx >= 0:
                 left = self._parse_term(s[:idx].strip())
                 right = self._parse_term(s[idx + len(op):].strip())
                 if left is not None and right is not None:
                     return Compound(op, [left, right])
-
-        # Prefix \+
-        if s.startswith('\\+'):
-            inner = self._parse_term(s[2:].strip())
-            if inner is not None:
-                return Compound('\\+', [inner])
 
         # Variable (uppercase or _) — after infix so "X \= Y" is caught above
         if s[0].isupper() or s[0] == '_':
@@ -230,6 +238,9 @@ class PrologEngine:
         goal = self._parse_term(query_str)
         if goal is None:
             return []
+
+        # Give each anonymous variable '_' a unique name so they don't alias.
+        goal = self._rename_anon(goal)
 
         # Collect user-visible variables from the query
         query_vars = _collect_vars(goal)
@@ -595,6 +606,15 @@ class PrologEngine:
             return Compound(term.functor, [self._rename_term(a, mapping) for a in term.args])
         return term
 
+    def _rename_anon(self, term: Term) -> Term:
+        """Replace each '_' variable with a unique fresh _Gn (query-side only)."""
+        if isinstance(term, Variable) and term.name == '_':
+            self.var_counter += 1
+            return Variable(f"_G{self.var_counter}")
+        if isinstance(term, Compound):
+            return Compound(term.functor, [self._rename_anon(a) for a in term.args])
+        return term
+
     # ------------------------------------------------------------------
     # Apply bindings (instantiate a template)
     # ------------------------------------------------------------------
@@ -661,6 +681,29 @@ class PrologEngine:
 # ============================================================================
 # UTILITIES
 # ============================================================================
+
+def _bracket_end(s: str, start: int) -> int:
+    """Return the index of the closing bracket that matches s[start].
+    s[start] must be '[' or '('. Returns -1 if unmatched."""
+    open_char = s[start]
+    close_char = ']' if open_char == '[' else ')'
+    depth = 0
+    in_quote = False
+    for i in range(start, len(s)):
+        c = s[i]
+        if c == "'" and not in_quote:
+            in_quote = True
+        elif c == "'" and in_quote:
+            in_quote = False
+        elif not in_quote:
+            if c == open_char:
+                depth += 1
+            elif c == close_char:
+                depth -= 1
+                if depth == 0:
+                    return i
+    return -1
+
 
 def _split_top(s: str, sep: str) -> List[str]:
     """Split s by sep only at depth 0 (not inside parens/brackets/quotes)."""

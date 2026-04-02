@@ -1,1 +1,4 @@
 prolog-reasoning.code-workspace
+__pycache__/
+*.pyc
+*.pyo

@@ -1,6 +1,6 @@
 # Demos
 
-Three self-contained examples showing what the prolog-reasoning engine does in realistic domains. Each has its own knowledge base, runnable queries, and a README walking through the reasoning.
+Four self-contained examples showing what the prolog-reasoning engine does in realistic domains. Each has its own knowledge base, runnable queries, and a README walking through the reasoning.
 
 All demos run from the repo root — no installation required beyond Python 3.
 

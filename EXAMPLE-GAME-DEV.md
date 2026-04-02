@@ -70,13 +70,13 @@ in various states of completion.
 >
 > **agent:** Querying the KB.
 > ```bash
-> python3 prolog-executor.py "puzzle_requires(clock_puzzle, gear)."
+> python3 prolog-executor.py "puzzle_requires(clock_puzzle, gear)." -kb knowledge-base.pl
 > # {"success": true, "bindings": [{}]}
 >
-> python3 prolog-executor.py "requires_puzzle(lantern, P)."
+> python3 prolog-executor.py "requires_puzzle(lantern, P)." -kb knowledge-base.pl
 > # {"success": true, "bindings": [{"P": "clock_puzzle"}]}
 >
-> python3 prolog-executor.py "gate(library, vault, I)."
+> python3 prolog-executor.py "gate(library, vault, I)." -kb knowledge-base.pl
 > # {"success": true, "bindings": [{"I": "lantern"}]}
 > ```
 > Gear → solves clock puzzle → spawns lantern → unlocks vault gate. So the
@@ -88,7 +88,7 @@ in various states of completion.
 >
 > **agent:** Querying.
 > ```bash
-> python3 prolog-executor.py "gate(From, To, keycard)."
+> python3 prolog-executor.py "gate(From, To, keycard)." -kb knowledge-base.pl
 > # {"success": true, "bindings": [{"From": "atrium", "To": "library"}]}
 > ```
 > atrium → library.
@@ -135,7 +135,7 @@ in various states of completion.
 >
 > **agent:** Querying.
 > ```bash
-> python3 prolog-executor.py "asset(gear, Path, Status)."
+> python3 prolog-executor.py "asset(gear, Path, Status)." -kb knowledge-base.pl
 > # {"success": true, "bindings": [{"Path": "assets/models/items/gear.glb", "Status": "complete"}]}
 > ```
 > Path is `assets/models/items/gear.glb`, status complete. The asset exists —
@@ -148,7 +148,7 @@ in various states of completion.
 >
 > **agent:**
 > ```bash
-> python3 prolog-executor.py "asset(painting, Path, _)."
+> python3 prolog-executor.py "asset(painting, Path, _)." -kb knowledge-base.pl
 > # {"success": true, "bindings": [{"Path": "assets/models/atrium/painting.glb"}]}
 > ```
 > `assets/models/atrium/painting.glb`
@@ -173,7 +173,7 @@ in various states of completion.
 >
 > **agent:** Querying.
 > ```bash
-> python3 prolog-executor.py "findall(Name-Status, (asset(Name, _, Status), Status \= complete), L)."
+> python3 prolog-executor.py "findall(Name-Status, (asset(Name, _, Status), Status \= complete), L)." -kb knowledge-base.pl
 > # {"success": true, "bindings": [{"L": "[lantern-placeholder, keycard-missing]"}]}
 > ```
 > Two gaps: lantern is placeholder, keycard is missing entirely. Everything else
@@ -182,9 +182,16 @@ in various states of completion.
 > **dev:** ok keycard we can fake with a placeholder too. lantern placeholder
 > is fine for now. can the player actually complete the game with current assets?
 >
-> **agent:** Let me reason through the progression gates against asset status.
+> **agent:** Updating keycard status in KB.
+> ```prolog
+> % was:
+> asset(keycard, '', missing).
+> % corrected:
+> asset(keycard, 'assets/models/items/keycard_placeholder.glb', placeholder).
+> ```
+> Now checking progression gates against asset status.
 > ```bash
-> python3 prolog-executor.py "gate(_, _, Item), asset(Item, _, missing)."
+> python3 prolog-executor.py "gate(_, _, Item), asset(Item, _, missing)." -kb knowledge-base.pl
 > # {"success": false, "error": "No solutions found"}
 > ```
 > No gate item has a missing asset — keycard is now placeholder, lantern is
@@ -244,19 +251,19 @@ Useful queries against this KB:
 
 ```bash
 # Where can I go from the library?
-python3 prolog-executor.py "connects(library_interior, Where)."
+python3 prolog-executor.py "connects(library_interior, Where)." -kb knowledge-base.pl
 # {"success": true, "bindings": [{"Where": "library_exterior"}, {"Where": "stoneship_age"}, ...]}
 
 # What ages exist?
-python3 prolog-executor.py "is_age(Age)."
+python3 prolog-executor.py "is_age(Age)." -kb knowledge-base.pl
 # {"success": true, "bindings": [{"Age": "stoneship_age"}, {"Age": "channelwood_age"}, ...]}
 
 # What's still on the todo list?
-python3 prolog-executor.py "findall(T-D, todo(T, D), Todos)."
+python3 prolog-executor.py "findall(T-D, todo(T, D), Todos)." -kb knowledge-base.pl
 # {"success": true, "bindings": [{"Todos": "[calibrate_hotspot_coordinates-..., implement_tower_puzzle-...]"}]}
 
 # Which tests are defined?
-python3 prolog-executor.py "findall(T, test(T), Tests)."
+python3 prolog-executor.py "findall(T, test(T), Tests)." -kb knowledge-base.pl
 ```
 
 When a new session starts, the agent queries the KB instead of asking the

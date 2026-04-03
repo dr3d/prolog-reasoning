@@ -887,13 +887,20 @@ def _introspect_kb(path: str) -> Optional[Dict]:
 
     entities: set = set()
     def collect_atoms(term: Term):
-        if isinstance(term, Atom) and term.name not in ('[]', '!', 'true', 'fail'):
-            entities.add(term.name)
+        if isinstance(term, Atom):
+            if term.name not in ('[]', '!', 'true', 'fail') and not any(c in term.name for c in '/~\\'):
+                entities.add(term.name)
         elif isinstance(term, Compound):
             for a in term.args:
                 collect_atoms(a)
     for c in facts:
-        collect_atoms(c.head)
+        head = c.head
+        if isinstance(head, Compound) and head.functor == 'property' and len(head.args) == 3:
+            # property(Subject, Key, Value) — skip Key (arg 1), it's a descriptor not an entity
+            collect_atoms(head.args[0])
+            collect_atoms(head.args[2])
+        else:
+            collect_atoms(head)
 
     return {"facts": facts, "rules": rules, "pred_counts": pred_counts, "entities": entities}
 

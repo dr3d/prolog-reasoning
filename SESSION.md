@@ -8,12 +8,9 @@
 This is an additive expansion — Hermes SKILL interface unchanged. Same engine, same KB format, two entry points.
 
 ### Family KB round-trip test
-Full test: seeded a personal KB via voice dictation → MCP assert → MCP query. Five generations of Scott's family captured:
-- Lemuel (1836–1912, Digby NS) → Medley (1879–1958) → Ann (d.1998) + Ian (1925–2017, Montreal) → Scott (b.1952) + Blake (b.1954) → Dana (b.1989)
-- Ernest (Ian's father, Sharbot Lake ON, hockey stick patent) + Arthur (Ernest's brother, boxer, moved to Australia)
-- Ming (Dana's partner, b.1986, China, Long Island City)
+Full test: seeded a personal KB via voice dictation → MCP assert → MCP query. Five generations of family data captured across multiple branches including birth/death years, locations, occupations, and partnerships.
 
-Inference verified: `sibling(scott, blake)`, `mother(ann, scott)`, `father(ian, scott)`, `ancestor(lemuel, scott)` — all derived, none asserted.
+Inference verified: `sibling/2`, `mother/2`, `father/2`, `ancestor/2` — all derived, none asserted.
 
 ### Schema discoveries
 
@@ -77,8 +74,8 @@ LLM-written facts had accumulated errors. Fixed:
 - `location(Hope, 'lives_near', scott, 1 mile up street).` → `property(hope, lives_near, scott).` (parse error: `1 mile up street` is not a valid term)
 - Duplicate `game(tetris).` removed
 - Missing `owns(scott, tictactoe).` added
-- `person(marlene).`, `person(hope).` added to core people
-- `female(marlene).`, `female(hope).` added (needed for `mother/2` rule)
+- `person(hope).` added to core people
+- `female(hope).` added (needed for `mother/2` rule)
 - `buried_in(lemuel, 'lynn_ma').` moved into Lemuel section (was orphaned at bottom)
 - Games section consolidated — duplicate comment block and scattered `location/2` facts cleaned up
 

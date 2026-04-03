@@ -1,3 +1,49 @@
+# Session Notes — 2026-04-02 (session 6)
+
+## Session 6 — KB repair, manifest audit, environment mapping
+
+### Environment mapping (confirmed)
+- WSL Hermes: `/u/home/scott/.hermes/` (mounted Windows path to WSL home)
+- Mac Hermes: `/m/.hermes/`
+- Hermes agent source: `/u/home/scott/.hermes/hermes-agent/` (not `/d/_PROJECTS/_TOOLS/hermes-agent` — that entry at bottom of this file is stale)
+- Skill install: `/u/home/scott/.hermes/skills/prolog-reasoning/`
+
+### Running WSL Python from Windows Claude Code
+Plain `python3` resolves to the Windows stub. Use:
+```bash
+wsl bash -c "python3 ~/.hermes/skills/prolog-reasoning/prolog-executor.py --validate -kb ~/.hermes/knowledge-base.pl"
+```
+The `/u/` mount gives direct read/write to WSL files — only execution needs `wsl bash -c`.
+
+### Manifest bug audit (triggered by Qwen/latest session)
+Three bugs identified in `prolog-executor.py`:
+
+1. **`generate-manifest.sh` corrupts JSON** — script does `python3 ... > $OUTPUT`, which overwrites the JSON already written internally by Python with plain text stdout. Hermes gets text instead of `[{role, content}]`.
+
+2. **Query line uses relative path** — when called with `-kb knowledge-base.pl`, the manifest bakes in a relative path. Hermes executes it from a different CWD → file not found.
+
+3. **`_manifest_is_current` treats missing files as current** — `not os.path.exists(p)` branch returns True, so a relative path that doesn't resolve in the current CWD is silently treated as "up to date." Manifest never regenerates.
+
+These are code bugs, not yet fixed — flagged for next code session.
+
+### KB repair (`~/.hermes/knowledge-base.pl`)
+LLM-written facts had accumulated errors. Fixed:
+- `friend(Scott, Hope).` → `friend(scott, hope).` (uppercase = Prolog variables, not atoms)
+- `location(Hope, 'lives_near', scott, 1 mile up street).` → `property(hope, lives_near, scott).` (parse error: `1 mile up street` is not a valid term)
+- Duplicate `game(tetris).` removed
+- Missing `owns(scott, tictactoe).` added
+- `person(marlene).`, `person(hope).` added to core people
+- `female(marlene).`, `female(hope).` added (needed for `mother/2` rule)
+- `buried_in(lemuel, 'lynn_ma').` moved into Lemuel section (was orphaned at bottom)
+- Games section consolidated — duplicate comment block and scattered `location/2` facts cleaned up
+
+Post-repair: `--validate` clean, 71 clauses. Manifest regenerated: 64 facts, 7 rules.
+
+### Still in entity list (known noise, not yet fixed)
+`fiance`, `lives_near`, `relationship_to_dana`, `~/games/*.py` — all atoms in property value positions, vacuumed up by `_introspect_kb`. Needs code fix to filter predicate keys/values from entity list.
+
+---
+
 # Session Notes — 2026-04-02 (session 5)
 
 ## Session 5 — Gemini integration, --validate, test expansion

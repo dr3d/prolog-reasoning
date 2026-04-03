@@ -1085,6 +1085,42 @@ def run_validate(kb_path: str = None) -> None:
         sys.exit(0)
 
 
+def run_assert(fact: str, kb_path: str = None) -> dict:
+    """Parse, validate, and append a fact to the KB. Skip silently if already present."""
+    target = kb_path or GLOBAL_KB
+
+    fact = fact.strip().rstrip('.')
+
+    engine = PrologEngine()
+    term = engine._parse_term(fact)
+    if term is None:
+        return {"success": False, "error": f"Could not parse: {fact!r}"}
+
+    warnings = _validate_term(term, "asserted fact")
+    if warnings:
+        return {"success": False, "error": warnings[0]}
+
+    clause = engine._term_to_clause(term)
+    if clause is None:
+        return {"success": False, "error": f"Not a valid clause: {fact!r}"}
+
+    # Check for duplicate against existing KB
+    check = PrologEngine()
+    try:
+        check.load_file(target)
+    except FileNotFoundError:
+        pass
+    new_t = check._clause_to_term(clause)
+    for existing in check.clauses:
+        if check._clause_to_term(existing) == new_t:
+            return {"success": True, "skipped": True, "reason": "already present"}
+
+    with open(target, 'a') as f:
+        f.write(f"{fact}.\n")
+
+    return {"success": True, "asserted": f"{fact}."}
+
+
 def main() -> None:
     args = sys.argv[1:]
 
@@ -1111,6 +1147,15 @@ def main() -> None:
     if args[0] == "--validate":
         run_validate(kb_path)
         sys.exit(0)
+
+    if args[0] == "--assert":
+        if len(args) < 2:
+            print(json.dumps({"success": False, "error": "--assert requires a fact argument"}))
+            sys.exit(1)
+        fact = " ".join(args[1:])
+        result = run_assert(fact, kb_path)
+        print(json.dumps(result))
+        sys.exit(0 if result.get("success") else 2)
 
     if args[0] == "--init":
         domain = args[1] if len(args) > 1 else "blank"

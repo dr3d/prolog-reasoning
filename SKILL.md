@@ -124,11 +124,15 @@ python3 prolog-executor.py "allowed(alice, X)." -kb ~/.hermes/knowledge-base.pl
 ### Compaction Mode (Extract facts from conversation)
 When the user states hard facts or a session is ending:
 1. Sweep for definite statements (no hedging like "I think" or "maybe")
-2. Check if already in KB: `python3 prolog-executor.py "parent(ann, scott)." -kb ~/.hermes/knowledge-base.pl`
-3. Append new facts to `knowledge-base.pl` under appropriate section
-4. Add date comment: `% added 2026-04-01`
-5. Run `python3 prolog-executor.py --validate -kb ~/.hermes/knowledge-base.pl` — fix any warnings before proceeding
-6. Only after KB is validated — hand off to normal prose compaction
+2. Assert each fact with `--assert` — validates before writing, skips duplicates silently:
+   ```bash
+   python3 prolog-executor.py --assert "parent(ann, scott)." -kb ~/.hermes/knowledge-base.pl
+   ```
+3. If `--assert` returns an error, fix the fact and retry before moving on
+4. Add a date comment directly in the KB after asserting: `% added 2026-04-02`
+5. Only after all facts are asserted clean — hand off to normal prose compaction
+
+**Do not use `echo >> knowledge-base.pl`** — use `--assert` instead. It validates, deduplicates, and avoids shell security warnings.
 
 > **Executor path**: examples above assume `prolog-executor.py` is symlinked into your project dir. If not, use the full path: `~/.hermes/skills/prolog-reasoning/prolog-executor.py`
 

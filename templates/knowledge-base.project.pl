@@ -23,6 +23,16 @@
 
 
 %% ---------------------------------------------------------------
+%% SECTION: Decisions / Rationale
+%% ---------------------------------------------------------------
+
+% decision(use_postgres, '2026-04-01').       % decision(What, When)
+% rationale(use_postgres, schema_needed).     % rationale(Decision, Reason)
+% decision(drop_redis, '2026-04-02').
+% rationale(drop_redis, complexity_not_worth_it).
+
+
+%% ---------------------------------------------------------------
 %% SECTION: Milestones
 %% ---------------------------------------------------------------
 

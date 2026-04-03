@@ -50,10 +50,10 @@ reachable(A, B) :- connected(A, C), reachable(C, B).
 %% ---------------------------------------------------------------
 
 % quest(find_artifact, active).    % active | complete | failed
-% quest_step(find_artifact, 1, enter_cave).
-% quest_step_done(find_artifact, 1).
+% quest_step(find_artifact, 1, enter_cave).   % quest_step(Quest, StepNum, StepName)
+% quest_step_done(find_artifact, 1).          % mark done by step number
 % flag(door_unlocked).
 
 quest_complete(Q) :-
     quest(Q, _),
-    \+ (quest_step(Q, _, S), \+ quest_step_done(Q, S)).
+    \+ (quest_step(Q, N, _), \+ quest_step_done(Q, N)).

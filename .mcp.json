@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "prolog-kb": {
+      "command": "python",
+      "args": ["D:/_PROJECTS/prolog-reasoning/prolog-mcp-server.py"]
+    }
+  }
+}

@@ -9,6 +9,7 @@
 % person(scott).
 % male(scott).  female(dana).
 % born(scott, 1981).
+% born_in(scott, boston).
 % lives_in(scott, austin).
 % occupation(scott, developer).
 

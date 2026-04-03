@@ -1,0 +1,19 @@
+# ~/.prolog-mcp/config.toml
+#
+# Copy this file to ~/.prolog-mcp/config.toml and adjust paths.
+# The server reads this at startup. An agent can write or update it
+# via normal file tools to self-provision a new KB environment.
+
+[kb]
+# Path to the knowledge base file. Created on first assert if absent.
+path = "~/.prolog-mcp/knowledge-base.pl"
+
+[backups]
+# Daily snapshots written here on the first KB mutation of each day.
+dir    = "~/.prolog-mcp/backups"
+retain = 7        # number of daily snapshots to keep
+
+[engine]
+# Path to prolog-executor.py. Defaults to the directory this server lives in.
+# Only needed if the server is installed separately from the engine.
+# executor_path = "D:/_PROJECTS/prolog-reasoning/prolog-executor.py"

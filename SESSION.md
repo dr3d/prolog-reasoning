@@ -1,3 +1,48 @@
+# Session Notes — 2026-04-02 (session 7)
+
+## Session 7 — MCP server live, Claude Code test, schema discoveries
+
+### MCP server confirmed working with Claude Code
+`prolog-mcp-server.py` is live. `.mcp.json` registers it at `D:/_PROJECTS/prolog-reasoning/prolog-mcp-server.py`. Tools available in Claude Code: `prolog_query`, `prolog_assert`, `prolog_retract`, `prolog_validate`, `prolog_manifest`. Resource: `prolog://kb`. Config at `~/.prolog-mcp/config.toml`.
+
+This is an additive expansion — Hermes SKILL interface unchanged. Same engine, same KB format, two entry points.
+
+### Family KB round-trip test
+Full test: seeded a personal KB via voice dictation → MCP assert → MCP query. Five generations of Scott's family captured:
+- Lemuel (1836–1912, Digby NS) → Medley (1879–1958) → Ann (d.1998) + Ian (1925–2017, Montreal) → Scott (b.1952) + Blake (b.1954) → Dana (b.1989)
+- Ernest (Ian's father, Sharbot Lake ON, hockey stick patent) + Arthur (Ernest's brother, boxer, moved to Australia)
+- Ming (Dana's partner, b.1986, China, Long Island City)
+
+Inference verified: `sibling(scott, blake)`, `mother(ann, scott)`, `father(ian, scott)`, `ancestor(lemuel, scott)` — all derived, none asserted.
+
+### Schema discoveries
+
+**`memory/2` + `detail/2` pattern** — anecdotes and personal recollections don't belong in `property/3` (too structural) or as prose blobs. Use:
+```prolog
+memory(scott, fishing_sharbot_lake).
+detail(fishing_sharbot_lake, 'Scott and Blake rowed out to the middle of the lake to fish, summer visits to Ernest').
+```
+`memory/2` keeps it queryable by entity. `detail/2` carries the human-readable prose. Best of both.
+
+**`died_in/2` vs `died/2`** — `died(person, year)` for when, `died_in(person, place)` for where. Distinct predicates, both useful.
+
+### `prolog://guide` resource — identified as next priority
+MCP clients get tool descriptions but no schema conventions. A cold LLM improvises schema and gets it wrong (prose blobs, inconsistent predicates). A `prolog://guide` resource — dense, example-heavy, Wrong/Right pairs — is what makes arbitrary LLMs schema well. Essentially SKILL.md rewritten for MCP context. Highest leverage next step.
+
+### Templates reviewed and tightened
+- `game.pl` — bug fixed: `quest_complete` was checking step name (`S`) against `quest_step_done/2` which stored step number (`N`). Fixed.
+- `personal.pl` — added `born_in/2` (was missing, common fact).
+- `project.pl` — added `decision/2` + `rationale/2` section (decisions need to survive compaction as much as tasks do).
+- Templates are teaching examples for LLMs, not starter kits. Every predicate choice matters — a subtle inconsistency teaches the wrong pattern.
+
+### Next steps
+1. Fix fishing memory: assert `detail/2` fact
+2. Write `prolog://guide` resource in `prolog-mcp-server.py`
+3. Add MCP section to README
+4. LM Studio test
+
+---
+
 # Session Notes — 2026-04-02 (session 6)
 
 ## Session 6 — KB repair, manifest audit, environment mapping

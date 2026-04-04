@@ -234,6 +234,26 @@ ancestor(X, Y)    :- parent(X, Z), ancestor(Z, Y).
 allowed(User, Action) :- role(User, Role), permission(Role, Action).
 ```
 
+**Rules are as important as facts.** A KB with only facts is a flat lookup table — it can't derive cousins, ancestors, or permissions. When seeding a new domain from a fact dump, always write the inference rules too, or start from a template that includes them:
+
+```bash
+python3 prolog-executor.py --init personal   # includes sibling/2, ancestor/2, grandparent/2, mother/2, father/2
+python3 prolog-executor.py --init game       # includes can_enter/2, has_item/2, quest_complete/1
+```
+
+For a family KB, the minimum useful rule set:
+```prolog
+sibling(X, Y)     :- parent(P, X), parent(P, Y), X \= Y.
+grandparent(X, Z) :- parent(X, Y), parent(Y, Z).
+ancestor(X, Y)    :- parent(X, Y).
+ancestor(X, Y)    :- parent(X, Z), ancestor(Z, Y).
+cousin(X, Y)      :- parent(PX, X), parent(PY, Y), sibling(PX, PY).
+mother(X, Y)      :- parent(X, Y), female(X).
+father(X, Y)      :- parent(X, Y), male(X).
+```
+
+Without these, queries like `cousin(X, oliver)` or `ancestor(reginald, X)` return nothing even if all the `parent/2` facts are present.
+
 ---
 
 ## Output Format

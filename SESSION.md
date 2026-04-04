@@ -24,7 +24,34 @@ Ran inference queries against the live personal KB via MCP tools:
 
 Issues found: `detail/2` for `fishing_with_blake_at_sharbot_lake` still missing (open since session 7). `findall` result returns list as string and leaks template variable into outer bindings — known limitation, not a regression.
 
-### Nemotron-3-nano-4B AGENT-TEST run (Hartwell family, Test 1+2)
+### Nemotron-3-nano-4B AGENT-TEST run 2 (explicit skill load)
+Second run, this time with `/load prolog-reasoning` first.
+
+**Improvement:** Facts stored to Prolog KB (not prose memory). Model used `execute_code` + Python to write 33 facts — not `--assert` CLI calls, but the right destination. Retraction partially worked: correctly used `retractall(lives_in(oliver, _))` via terminal.
+
+**Still failing:**
+- Inference queries errored out (`[error]` on every `execute_code` attempt) → fell back to context answers → wrong
+- "Oliver's cousins: none — no sibling data beyond his siblings Edward and Sophie" — Edward is Oliver's *father*, not sibling
+- "Zara is Oliver's granddaughter; James is his great-great-grandson" — fabricated, Zara is his *daughter*
+- Negative space still hallucinating: "Thomas died of old age", "Reginald likely born in England"
+- Retraction errors: asserted `married(harit, kofi_mensah)` (typo), added `female(kofi_mensah)` (Kofi is male)
+
+**Critical finding — missing rules:** Model stored 33 facts but wrote zero inference rules. No `sibling/2`, `cousin/2`, `ancestor/2`. Without rules the KB is a flat lookup table — all inference queries fail or fall back to the model. This is a documentation gap: SKILL.md and the templates don't make clear that rules are as important as facts. Fixed: added rule guidance to SKILL.md Schema Conventions section.
+
+**Run 1 vs Run 2 comparison:**
+
+| | No skill load | Explicit load |
+|---|---|---|
+| Storage destination | Prose memory | Prolog KB ✓ |
+| Inference rules written | No | No |
+| Inference queries run | No | Tried, errored |
+| Inference answers correct | No | No |
+| Retraction used | No | Partially ✓ |
+| Hallucination on negative space | Yes | Yes |
+
+Explicit skill load fixes storage. Doesn't fix inference — that requires rules in the KB and working queries.
+
+### Nemotron-3-nano-4B AGENT-TEST run 1 (no skill load)
 **Result: skill never triggered.** Model wrote all facts to prose memory (`+memory`) instead of asserting to Prolog KB. Zero `--assert` calls, zero queries run.
 
 **Downstream inference failures** (all from prose recall, not Prolog):

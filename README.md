@@ -317,6 +317,36 @@ parent(mary_ann, scott).    % RIGHT — underscore
 
 ---
 
+## Debugging Common Problems
+
+**Query returns no results even though you know the fact is there:**
+```bash
+# 1. Check the predicate name is actually in the KB
+python3 prolog-executor.py --manifest
+# Look at "Predicates:" line — if lives_in isn't there, nothing was written under that name
+
+# 2. Check for syntax issues that wrote a broken fact silently
+python3 prolog-executor.py --validate
+
+# 3. Check the entity name spelling exactly — atoms are case-sensitive
+# "Scott" and "scott" are different atoms
+```
+
+**Duplicate results from a query:**
+Two contradictory facts are both present — `lives_in(scott, austin).` and `lives_in(scott, portland).` both succeed. Fix:
+```bash
+python3 prolog-executor.py "retractall(lives_in(scott, _))." -kb ~/.hermes/knowledge-base.pl
+python3 prolog-executor.py --assert "lives_in(scott, portland)." -kb ~/.hermes/knowledge-base.pl
+```
+
+**"Depth limit exceeded" error:**
+A recursive rule is hitting the 500-step ceiling. Usually means an infinite loop — a rule that calls itself with no base case to terminate. Test with a minimal KB to isolate the rule.
+
+**Inference rule fires but returns wrong values (`_G12` in results):**
+Compound terms in results showing internal variable names means the query returned an unresolved term. Make sure the query binds all variables — add `findall` or ground the arguments.
+
+---
+
 ## Why Not Just Use a SQL Database?
 
 SQL requires a schema, a running server, and queries that enumerate everything explicitly. Prolog gives you schema-free storage and inference — `grandparent`, `ancestor`, `allowed` are never stored, they're derived. For a personal knowledge base where the shape of the data isn't known in advance, that flexibility matters.

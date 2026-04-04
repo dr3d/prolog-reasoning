@@ -159,6 +159,34 @@ python3 prolog-executor.py "ancestor(A, scott)." -kb ~/.hermes/knowledge-base.pl
 
 ---
 
+## Natural Language → Prolog
+
+Common statement types and how to encode them. The predicate choice matters — a wrong predicate name means queries never find the fact.
+
+| User says | Write | Notes |
+|-----------|-------|-------|
+| "X is Y's parent / mum / dad" | `parent(X, Y).` | `parent(Parent, Child)` — parent first |
+| "X and Y are siblings" | `sibling(X, Y). sibling(Y, X).` | Assert both directions |
+| "X married Y" | `married(X, Y). married(Y, X).` | Assert both directions |
+| "X lives in / moved to Y" | `lives_in(X, y).` | Retract old first if correcting |
+| "X's job / role is Y" | `occupation(X, y).` or `role(X, y).` | Use `occupation` for job titles, `role` for system roles (admin, etc.) |
+| "X was born in year Y" | `born(X, 1975).` | Year as number, no quotes needed |
+| "X was born in city Y" | `born_in(X, city).` | Separate predicate from year |
+| "X died in year Y" | `died(X, 1998).` | |
+| "X died in place Y" | `died_in(X, place).` | Distinct from `died/2` |
+| "X happened on date Y" | `event(x_name, '2026-03-31').` | Date MUST be quoted atom |
+| "X owns / has Y" | `owns(X, y).` | |
+| "X is a [category]" | `person(X). male(X). female(X).` | Use typed predicates, not `is_a/2` |
+| "something about X" (misc) | `property(X, key, value).` | Catch-all for one-offs |
+| "X remembers / once did Y" | `memory(X, event_id). detail(event_id, 'prose').` | Anecdotes: queryable hook + prose blob |
+
+**Argument order gotchas:**
+- `parent(Parent, Child)` — not `parent(Child, Parent)`
+- `permission(Role, Action)` — not `permission(Action, Role)`
+- When unsure, check what rules in the KB expect, or check AGENT-TEST.md examples
+
+---
+
 ## Schema Conventions
 
 **Use lowercase atoms with underscores:**
@@ -221,7 +249,20 @@ Empty bindings `[{}]` means the query succeeded with no variables — ground que
 
 ## Correcting Facts
 
-If the user corrects a fact, find and update `knowledge-base.pl` directly — do not append a contradicting fact. Two conflicting ground clauses both succeed in Prolog, giving wrong duplicate results.
+**Never append a contradicting fact.** Two conflicting ground clauses both succeed in Prolog, giving wrong duplicate results.
+
+The two-step pattern — retract old, assert new:
+```bash
+# User says "I moved to Portland"
+python3 prolog-executor.py "retractall(lives_in(scott, _))." -kb ~/.hermes/knowledge-base.pl
+python3 prolog-executor.py --assert "lives_in(scott, portland)." -kb ~/.hermes/knowledge-base.pl
+
+# User says "Dana is now CTO, not VP"
+python3 prolog-executor.py "retractall(role(dana, _))." -kb ~/.hermes/knowledge-base.pl
+python3 prolog-executor.py --assert "role(dana, cto)." -kb ~/.hermes/knowledge-base.pl
+```
+
+`retractall/1` accepts patterns — `retractall(lives_in(scott, _))` removes ALL `lives_in` facts for scott regardless of the location value. Always retract before asserting when a fact can only have one true value at a time.
 
 ---
 

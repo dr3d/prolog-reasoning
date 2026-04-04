@@ -1135,6 +1135,11 @@ def main() -> None:
             print(json.dumps({"success": False, "error": "-kb requires a path argument"}))
             sys.exit(1)
 
+    # Normalise to absolute path so manifest query hints and mtime checks work
+    # regardless of the caller's CWD.
+    if kb_path:
+        kb_path = os.path.abspath(os.path.expanduser(kb_path))
+
     if not args:
         args = ["--manifest"]
         if kb_path is None:

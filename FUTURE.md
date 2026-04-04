@@ -153,7 +153,7 @@ Then any rule that looks up an entity can call `canonical/2` first. The agent wr
 
 ---
 
-## 10. Query Timeout / Search Budget
+## 8. Query Timeout / Search Budget
 
 **The problem:** Beyond `MAX_DEPTH = 500`, there is no per-query cost control. A query that generates an enormous number of intermediate solutions (e.g. a badly written `findall` over a large KB) blocks indefinitely. In an agent loop this means a hung subprocess with no signal to the caller.
 
@@ -167,7 +167,7 @@ Then any rule that looks up an entity can call `canonical/2` first. The agent wr
 
 ---
 
-## 11. Domain Suitability Documentation
+## 9. Domain Suitability Documentation
 
 **The issue:** The tool gets misapplied when users try to use it for inherently fuzzy knowledge — opinions, uncertain statements, probabilistic beliefs, open-ended concepts. It fails silently in those cases: facts get stored, queries return wrong answers or no answers, and the user doesn't understand why.
 

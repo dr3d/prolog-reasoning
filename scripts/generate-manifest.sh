@@ -3,12 +3,12 @@
 # Regenerates the KB manifest file used by Hermes prefill_messages_file.
 #
 # Usage:
-#   ./generate-manifest.sh [kb_path] [output_path]
+#   ./generate-manifest.sh [kb_path]
 #
 # Defaults:
-#   kb_path     — knowledge-base.pl next to the executor
-#   output_path — ~/.hermes/kb-manifest.json
+#   kb_path — ~/.hermes/knowledge-base.pl (global KB)
 #
+# Output: JSON written to ~/.hermes/kb-manifest.json by the executor.
 # Output format: JSON array of {role, content} dicts required by Hermes:
 #   [{"role": "user", "content": "..."}, {"role": "assistant", "content": "Understood..."}]
 #
@@ -21,12 +21,12 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXECUTOR="$SCRIPT_DIR/../prolog-executor.py"
 KB="${1:-}"
-OUTPUT="${2:-$HOME/.hermes/kb-manifest.json}"
 
+# NOTE: do not redirect stdout — the executor writes JSON directly to
+# ~/.hermes/kb-manifest.json. Redirecting stdout would overwrite that file
+# with plain text, breaking Hermes prefill_messages_file.
 if [ -n "$KB" ]; then
-    python3 "$EXECUTOR" --manifest -kb "$KB" > "$OUTPUT"
+    python3 "$EXECUTOR" --manifest -kb "$KB"
 else
-    python3 "$EXECUTOR" --manifest > "$OUTPUT"
+    python3 "$EXECUTOR" --manifest
 fi
-
-echo "Manifest written to $OUTPUT"

@@ -335,6 +335,3 @@ agent:
 Skill only fires via the three conditions in the description. This is a separate problem
 from prefill — don't conflate them.
 
-## Hermes source location
-
-`/d/_PROJECTS/_TOOLS/hermes-agent`

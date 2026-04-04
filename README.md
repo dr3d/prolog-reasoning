@@ -77,6 +77,10 @@ python3 prolog-executor.py --manifest
 # Check KB for syntax problems (unquoted dates, hyphenated names parsed as arithmetic)
 # Each warning shows the exact fix. Exit 0 = clean, exit 1 = issues found.
 python3 prolog-executor.py --validate
+
+# Assert a fact: validates syntax, deduplicates, appends to KB.
+# Safer than echo >> knowledge-base.pl (no shell quoting hazards).
+python3 prolog-executor.py --assert "parent(ann, scott)."
 ```
 
 None of `ancestor`, `allowed`, or `can_fly` are stored as facts — they're derived by rules from a handful of `parent`, `role`, and `bird` assertions. That's the point.
@@ -290,7 +294,6 @@ occupation(scott, developer).
 
 % Relationships
 parent(ann, scott).         % parent(Parent, Child)
-spouse(scott, susan).
 sibling(scott, blake).
 partner(scott, hope).
 

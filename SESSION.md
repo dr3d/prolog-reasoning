@@ -1,3 +1,45 @@
+# Session Notes — 2026-04-04 (session 8)
+
+## Session 8 — Qwen review, AGENT-TEST, Nemotron-nano Hartwell run
+
+### Qwen3-Coder-Next design review
+Full codebase review by Qwen3-Coder-Next produced a weakness analysis and implementation suggestions. Useful items incorporated:
+
+- **SKILL.md**: Added NL→Prolog semantic pattern table (12 common statement types, argument order gotchas) and expanded "Correcting Facts" section with the `retractall` + `--assert` two-step pattern. `retractall/1` was already implemented — just not surfaced in the docs.
+- **README**: Added "Debugging Common Problems" section covering the four most common failure modes.
+- **FUTURE.md**: Three new items — `setof/3`/`bagof/3` (§10), conjunction in `findall` subgoal (§11), two-tier KB namespace isolation (§12). §3 updated with `assertz_replace(Pattern, New)` as the preferred conflict resolution interface.
+
+Items Qwen raised that were already handled or intentionally not added: schema registry as a hard restriction (fights schema-free design), thread-based timeout (complex cross-platform), separate-engines two-tier merge (overengineered).
+
+### AGENT-TEST.md created
+[`AGENT-TEST.md`](AGENT-TEST.md) — five copy-paste test prompts for evaluating skill integration against live agents. Tests: fact extraction under load, multi-hop inference, negative space (no hallucination), retraction/update, cold load from manifest. Includes a minimal Hartwell family seed KB and a scoring guide. Designed to draw a clear line between what prose memory can do and what Prolog inference does.
+
+### MCP engine test (Claude Code, this session)
+Ran inference queries against the live personal KB via MCP tools:
+- `ancestor/2` chaining 5 levels (lemuel → ... → scott) ✓
+- `sibling/2`, `mother/2`, `grandparent/2` all derived correctly ✓
+- Ground query `ancestor(lemuel, blake)` confirmed true ✓
+- Negative space: `lives_in(scott, toronto)` correctly returned no solutions ✓
+- Assert → query → retract → confirm gone — full cycle clean ✓
+
+Issues found: `detail/2` for `fishing_with_blake_at_sharbot_lake` still missing (open since session 7). `findall` result returns list as string and leaks template variable into outer bindings — known limitation, not a regression.
+
+### Nemotron-3-nano-4B AGENT-TEST run (Hartwell family, Test 1+2)
+**Result: skill never triggered.** Model wrote all facts to prose memory (`+memory`) instead of asserting to Prolog KB. Zero `--assert` calls, zero queries run.
+
+**Downstream inference failures** (all from prose recall, not Prolog):
+- Oliver's cousins: returned "Margaret Fitch, Gerald Fitch, Harriet, James" — Margaret and Gerald are his *aunt and uncle*, not cousins. Correct: Harriet and James.
+- Zara/James relationship: returned "second cousins" — correct answer is first cousins once removed.
+- Reginald's grandchildren: mostly right but garbled — attributed Louise Crane's marriage to Oliver instead of Edward, invented "Harriet Nair".
+
+**What the model got right:** single-hop lookups (who lives in Hartwell, who's in legal profession) — things prose recall handles fine.
+
+**Root cause:** manifest not in prefill for this session, so the behavioral commitment never fired. Without the manifest injection a 4B model defaults to its built-in memory tool. The skill description alone wasn't enough to override that routing. Session 3's behavioral prefill fix solved this for Qwen but requires the manifest to be wired up.
+
+**Conclusion:** The test worked exactly as designed — every wrong answer was an inference question, every right answer was a lookup. Validates that prose memory and Prolog inference have a clean failure boundary: prose handles recall, fails at multi-hop derivation.
+
+---
+
 # Session Notes — 2026-04-02 (session 7)
 
 ## Session 7 — MCP server live, Claude Code test, schema discoveries

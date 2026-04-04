@@ -56,6 +56,12 @@ Design notes and open questions for extending the prolog-reasoning skill. Captur
 
 **What conflict detection would add:** A `--retract-matching` flag or `resolve/1` built-in that, given a new fact, finds and removes any existing clauses with the same functor/arity that contradict it before asserting the new one.
 
+**Preferred interface — `assertz_replace/2`:** Takes a pattern and a replacement in one call:
+```prolog
+assertz_replace(lives_in(scott, _), lives_in(scott, portland)).
+```
+Retracts all clauses unifying with the pattern, then asserts the new fact. More ergonomic than a separate `retractall` + `assert` sequence for agents. Currently the two-step `retractall` + `--assert` workaround works, but a single built-in would be cleaner.
+
 **When this matters:**
 - Corrections: user says "actually I moved to Portland" — engine should retract the Austin fact, not append alongside it
 - Compaction: when sweeping a conversation, new facts might update old ones — automated conflict resolution prevents "truth pollution"
@@ -189,16 +195,74 @@ The "When to Write / Do Not Extract" section in SKILL.md already touches this �
 
 ---
 
+## 10. `setof/3` and `bagof/3`
+
+**What the engine does now:** Only `findall/3` is implemented. `findall` collects all solutions including duplicates — `findall(X, role(X, admin), L)` on a KB with two identical `role(alice, admin)` facts returns `[alice, alice]`.
+
+**What `setof/3` and `bagof/3` would add:**
+- `setof/3` — like `findall` but sorts and deduplicates results. Fails (rather than returning `[]`) if no solutions. Standard Prolog.
+- `bagof/3` — like `setof` but preserves duplicates, groups by unbound variables. Useful for collecting facts grouped by a shared argument.
+
+**When this matters:**
+- Any query where duplicates would mislead: `findall(X, parent(_, X), Kids)` on a KB where a child appears under two parents returns duplicates
+- Sorted output for display: `setof(X, lives_in(X, london), People)` returns alphabetical list
+- `bagof` is rarely needed but `setof` comes up often in clean fact retrieval
+
+**Implementation sketch:** `setof` is ~20 lines — run `findall` internally, then apply Python `sorted(set(...))` on the serialized results before building the list term. The tricky part is `bagof`'s grouping semantics (`^` operator for existential quantification) — can defer that.
+
+**Complexity:** Low for `setof`. Medium for full `bagof` with `^` operator.
+
+---
+
+## 11. Conjunction in `findall` Subgoal
+
+**What the engine does now:** `findall(X, parent(scott, X), Kids)` works. But `findall(X, (parent(scott, X), female(X)), Daughters)` fails — the parser doesn't handle top-level comma inside the subgoal argument.
+
+**Root cause:** The `_split_top` parser splits on commas to separate clause body goals. Inside a `findall` the second argument is itself a conjunction, but the parser treats it as two separate `findall` arguments rather than one conjunctive goal.
+
+**Workaround:** Wrap the conjunction in a helper rule:
+```prolog
+daughter(P, X) :- parent(P, X), female(X).
+% then: findall(X, daughter(scott, X), Daughters)
+```
+
+**Fix:** In `_parse_term`, detect `findall(`, extract its three arguments respecting nested brackets, then parse the subgoal argument through `_split_top` as a conjunction. SESSION.md Session 4 documents this as a known expected failure.
+
+**Complexity:** Low-to-moderate. Targeted parser change, shouldn't affect other parsing paths.
+
+---
+
+## 12. Two-Tier KB Namespace Isolation
+
+**What the engine does now:** When a project KB is given with `-kb`, both the project KB and the global KB are loaded into the same engine. All predicates share one flat namespace — `parent/2` in the global KB and `parent/2` in a project KB unify freely.
+
+**The risk:** A project KB that redefines a predicate (`lives_in/2` for fictional characters in a game) will mix with real-world facts from the global KB. Queries can return results from the wrong KB without any indication.
+
+**What isolation would add:** A way to keep project facts separate from global facts when loading both, preventing cross-contamination while still allowing the agent to query either tier explicitly.
+
+**Approaches (in ascending complexity):**
+1. **Load order as override** — load global first, project second. Project clauses shadow global ones for the same predicate. Simple, already partially true.
+2. **Namespace prefixing convention** — document in SKILL.md that project KBs should use a prefix (`game_lives_in` vs `lives_in`). Zero engine changes, relies on agent discipline.
+3. **Separate engines with explicit merge** — run two `PrologEngine` instances and combine clause lists with project-first ordering. Cleanest isolation. Requires refactoring `run_query` to accept two KB paths explicitly.
+
+**When this matters:** Mostly when the project domain overlaps with global personal facts — a fiction-writing KB using `person/1`, `lives_in/2`, `parent/2` for characters will pollute queries against the real KB.
+
+**Complexity:** Low (convention) to moderate (separate engines).
+
+---
+
 ## Priority / Sequencing
 
 If these were to be implemented in order of value vs. effort:
 
-1. **Conflict detection** — low effort, high day-to-day value, prevents a real failure mode
-2. **KB integrity rules / --check** — very low effort, pure Prolog, catches contradictions across sessions
-3. **Entity aliases** — zero engine work, pure KB convention, document in SKILL.md
-4. **Domain suitability documentation** — zero engine work, prevents tool misuse
-5. **Proof traces** — moderate effort, turns the engine from a lookup tool into an explainable reasoner
-6. **Query timeout / search budget** — low-moderate effort, needed before any public release
-7. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
-8. **Rule safety / loop detection** — moderate effort, defensive value
-9. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases
+1. **Conflict detection / `assertz_replace`** — low effort, high day-to-day value, prevents a real failure mode
+2. **`findall` conjunction fix** — low effort, removes a known papercut that forces helper rules
+3. **`setof/3`** — low effort, fixes duplicate results from findall
+4. **KB integrity rules / --check** — very low effort, pure Prolog, catches contradictions across sessions
+5. **Entity aliases** — zero engine work, pure KB convention, document in SKILL.md
+6. **Proof traces** — moderate effort, turns the engine from a lookup tool into an explainable reasoner
+7. **Query timeout / search budget** — low-moderate effort, needed before any public release
+8. **Forward chaining** — moderate effort, makes the KB more legible and the manifest more useful
+9. **Rule safety / loop detection** — moderate effort, defensive value
+10. **Two-tier KB namespace isolation** — low (convention) to moderate (separate engines), worth addressing before the project KB sees heavy use
+11. **CLP(FD) constraints** — high effort, qualitatively expands what the skill can reason about, but only needed for scheduling/resource/puzzle use cases
